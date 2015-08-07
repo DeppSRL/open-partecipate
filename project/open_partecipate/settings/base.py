@@ -213,6 +213,7 @@ DJANGO_APPS = (
 LOCAL_APPS = (
     'open_partecipate',
     'open_partecipate.territori',
+    'rest_framework',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -321,3 +322,7 @@ WSGI_APPLICATION = '%s.wsgi.application' % PACKAGE_NAME
 # See: https://docs.djangoproject.com/en/dev/releases/1.6/#new-test-runner
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 ########## END TESTING CONFIGURATION
+
+REST_FRAMEWORK = {
+    'PAGE_SIZE': 10,
+}

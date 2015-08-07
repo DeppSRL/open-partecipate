@@ -70,6 +70,9 @@ class Command(BaseCommand):
             keep_default_na=False,
             converters={
                 'ID_ENTE': convert_int,
+                'Anno': convert_int,
+                'Entrata': convert_float,
+                'Spesa': convert_float,
             }
         )
 
@@ -94,60 +97,36 @@ class Command(BaseCommand):
             with open(archivefile, 'r') as file:
                 archive = file.read()
 
-        with zipfile.ZipFile(StringIO(archive)) as zfile:
-            df1 = self.read_csv(zfile.read('VOP_ANAGRAFICA.csv'))
-            df2 = self.read_csv(zfile.read('VOP_ANAGRAFICA_SERIE.csv'))
-
         self.logger.info(u'Inizio import.')
 
         start_time = datetime.datetime.now()
+
+        with zipfile.ZipFile(StringIO(archive)) as zfile:
+            df1 = self.read_csv(zfile.read('VOP_ANAGRAFICA.csv'))
+            df2 = self.read_csv(zfile.read('VOP_ANAGRAFICA_SERIE.csv'))
 
         df = pd.merge(df1, df2.drop('DT_ANNO_RIF', 1).drop_duplicates(), on='ID_ENTE')
 
         self.import_enti(df)
 
+        with zipfile.ZipFile(StringIO(archive)) as zfile:
+            df = self.read_csv(zfile.read('VOP_ENTRATE_SERIE.csv'))
+
+        df = df[df['Entrata'] > 0]
+
+        self.import_enti_entrate(df)
+
+        with zipfile.ZipFile(StringIO(archive)) as zfile:
+            df = self.read_csv(zfile.read('VOP_SPESE_SERIE.csv'))
+
+        df = df[df['Spesa'] > 0]
+
+        self.import_enti_uscite(df)
+
         duration = datetime.datetime.now() - start_time
         seconds = round(duration.total_seconds())
 
         self.logger.info(u'Fatto. Tempo di esecuzione: {:02d}:{:02d}:{:02d}.'.format(int(seconds // 3600), int((seconds % 3600) // 60), int(seconds % 60)))
-
-    @transaction.atomic
-    def _import_enti_categoria(self, df):
-        categoria_cod2obj = {}
-
-        df1 = df[['CATEGORIA']].drop_duplicates().sort('CATEGORIA')
-        df_count = len(df1)
-
-        for n, (index, row) in enumerate(df1.iterrows(), 1):
-            codice, descrizione = [x.strip() for x in row['CATEGORIA'].split(' - ', 1)]
-
-            categoria, created = EnteCategoria.objects.get_or_create(
-                codice=codice,
-                tipo=EnteCategoria.TIPO.categoria,
-                defaults={
-                    'descrizione': descrizione,
-                }
-            )
-            self._log(created, u'{}/{} - Creata categoria: {}'.format(n, df_count, categoria))
-
-            categoria_cod2obj[categoria.codice] = categoria
-
-        df1 = df[['CATEGORIA', 'SOTTOTIPO']].drop_duplicates().sort(['CATEGORIA', 'SOTTOTIPO'])
-        df_count = len(df1)
-
-        for n, (index, row) in enumerate(df1.iterrows(), 1):
-            codice, descrizione = [x.strip() for x in row['SOTTOTIPO'].split(' - ', 1)]
-
-            sottocategoria, created = EnteCategoria.objects.get_or_create(
-                codice=codice,
-                tipo=EnteCategoria.TIPO.sottocategoria,
-                categoria_superiore=categoria_cod2obj[row['CATEGORIA'].split(' - ', 1)[0]],
-                defaults={
-                    'descrizione': descrizione,
-                }
-            )
-            self._log(created, u'{}/{} - Creata sottocategoria: {}'.format(n, df_count, sottocategoria))
-
 
     @transaction.atomic
     def import_enti(self, df):
@@ -181,10 +160,156 @@ class Command(BaseCommand):
                 tipologia=tipologia_desc2cod[row['TIPOLOGIA']],
                 sottocategoria=sottocategoria_cod2obj[row['SOTTOTIPO'].split(' - ', 1)[0]],
             )
-            self.logger.info(u'{}/{} - Creato ente: {}'.format(n, df_count, ente))
+            self._log(u'{}/{} - Creato ente: {}'.format(n, df_count, ente))
 
+    def import_enti_entrate(self, df):
+        self.logger.info(u'Cancellazione entrate enti in corso ....')
+        EnteEntrata.objects.all().delete()
+        self.logger.info(u'Fatto.')
 
-    def _log(self, created, msg):
+        voce_cod2obj = self._import_codelist(df[['Voce']], EnteEntrataVoce)
+
+        df_count = len(df)
+
+        # transaction.set_autocommit(False)
+        #
+        # for n, (index, row) in enumerate(df.iterrows(), 1):
+        #     ente_entrata = EnteEntrata.objects.create(
+        #         ente_id=row['ID_ENTE'],
+        #         anno=row['Anno'],
+        #         importo=row['Entrata'],
+        #         voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+        #     )
+        #     self._log(u'{}/{} - Creata entrata ente: {}'.format(n, df_count, ente_entrata))
+        #
+        #     if (n % 5000 == 0) or (n == df_count):
+        #         self.logger.info(u'{}/{} -----------------> Commit.'.format(n, df_count))
+        #         transaction.commit()
+
+        insert_list = []
+
+        for n, (index, row) in enumerate(df.iterrows(), 1):
+            insert_list.append(
+                EnteEntrata(
+                    ente_id=row['ID_ENTE'],
+                    anno=row['Anno'],
+                    importo=row['Entrata'],
+                    voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+                )
+            )
+            self._log(u'{}/{} - Creata entrata ente: {}'.format(n, df_count, insert_list[-1]))
+
+            if (n % 5000 == 0) or (n == df_count):
+                self.logger.info(u'{}/{} -----------------> Salvataggio in corso.'.format(n, df_count))
+                EnteEntrata.objects.bulk_create(insert_list)
+                insert_list = []
+
+    def import_enti_uscite(self, df):
+        self.logger.info(u'Cancellazione uscite enti in corso ....')
+        EnteUscita.objects.all().delete()
+        self.logger.info(u'Fatto.')
+
+        voce_cod2obj = self._import_codelist(df[['Voce']], EnteUscitaVoce)
+        settore_cod2obj = self._import_codelist(df[['Settore']], EnteUscitaSettore)
+
+        df_count = len(df)
+
+        # transaction.set_autocommit(False)
+        #
+        # for n, (index, row) in enumerate(df.iterrows(), 1):
+        #     ente_uscita = EnteUscita.objects.create(
+        #         ente_id=row['ID_ENTE'],
+        #         anno=row['Anno'],
+        #         importo=row['Spesa'],
+        #         voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+        #         settore=settore_cod2obj[row['Settore'].split(' - ', 1)[0]],
+        #     )
+        #     self._log(u'{}/{} - Creata uscita ente: {}'.format(n, df_count, ente_uscita))
+        #
+        #     if (n % 5000 == 0) or (n == df_count):
+        #         self.logger.info(u'{}/{} -----------------> Commit.'.format(n, df_count))
+        #         transaction.commit()
+
+        insert_list = []
+
+        for n, (index, row) in enumerate(df.iterrows(), 1):
+            insert_list.append(
+                EnteUscita(
+                    ente_id=row['ID_ENTE'],
+                    anno=row['Anno'],
+                    importo=row['Spesa'],
+                    voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+                    settore=settore_cod2obj[row['Settore'].split(' - ', 1)[0]],
+                )
+            )
+            self._log(u'{}/{} - Creata uscita ente: {}'.format(n, df_count, insert_list[-1]))
+
+            if (n % 5000 == 0) or (n == df_count):
+                self.logger.info(u'{}/{} -----------------> Salvataggio in corso.'.format(n, df_count))
+                EnteUscita.objects.bulk_create(insert_list)
+                insert_list = []
+
+    @transaction.atomic
+    def _import_enti_categoria(self, df):
+        categoria_cod2obj = {}
+
+        df1 = df[['CATEGORIA']].drop_duplicates().sort('CATEGORIA')
+        df_count = len(df1)
+
+        for n, (index, row) in enumerate(df1.iterrows(), 1):
+            codice, descrizione = [x.strip() for x in row['CATEGORIA'].split(' - ', 1)]
+
+            categoria, created = EnteCategoria.objects.get_or_create(
+                codice=codice,
+                tipo=EnteCategoria.TIPO.categoria,
+                defaults={
+                    'descrizione': descrizione,
+                }
+            )
+            self._log(u'{}/{} - Creata categoria: {}'.format(n, df_count, categoria), created)
+
+            categoria_cod2obj[categoria.codice] = categoria
+
+        df1 = df[['CATEGORIA', 'SOTTOTIPO']].drop_duplicates().sort(['CATEGORIA', 'SOTTOTIPO'])
+        df_count = len(df1)
+
+        for n, (index, row) in enumerate(df1.iterrows(), 1):
+            codice, descrizione = [x.strip() for x in row['SOTTOTIPO'].split(' - ', 1)]
+
+            sottocategoria, created = EnteCategoria.objects.get_or_create(
+                codice=codice,
+                tipo=EnteCategoria.TIPO.sottocategoria,
+                categoria_superiore=categoria_cod2obj[row['CATEGORIA'].split(' - ', 1)[0]],
+                defaults={
+                    'descrizione': descrizione,
+                }
+            )
+            self._log(u'{}/{} - Creata sottocategoria: {}'.format(n, df_count, sottocategoria), created)
+
+    @transaction.atomic
+    def _import_codelist(self, df, model):
+        df = df.drop_duplicates().sort()
+        df_count = len(df)
+
+        cod2obj = {}
+
+        for n, (index, row) in enumerate(df.iterrows(), 1):
+            codice, descrizione = [x.strip() for x in row[0].split(' - ', 1)]
+
+            object, created = model.objects.update_or_create(
+                codice=codice,
+                defaults={
+                    'descrizione': descrizione,
+                }
+            )
+
+            cod2obj[object.codice] = object
+
+            self._log(u'{}/{} - Creato {}: {}'.format(n, df_count, model._meta.verbose_name_raw, object), created)
+
+        return cod2obj
+
+    def _log(self, msg, created=True):
         if created:
             self.logger.info(msg)
         else:
@@ -203,7 +328,7 @@ def get_sede(comune, prov, logger):
         with open(os.path.join(settings.RESOURCES_PATH, 'comune2fixed.json')) as comune2fixed_file:
             get_sede.comune2fixed = json.load(comune2fixed_file)
 
-    comune = re.sub(r' +', ' ', re.sub(r'\(.*?\)', '', comune.replace(u'¿', ''))).strip().upper()
+    comune = re.sub(r' +', ' ', re.sub(r'\(.*?\)', '', comune.rstrip(u'¿'))).strip().upper()
     prov = prov.strip(" '()").upper()
 
     if not comune:
