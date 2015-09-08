@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-from views import EnteViewSet
+from views import EnteViewSet, pippo
 
 # load admin modules
 from django.contrib import admin
@@ -17,8 +17,9 @@ router = routers.DefaultRouter()
 router.register(r'enti', EnteViewSet)
 
 urls = (
-    # url(r'^$', TemplateView.as_view(template_name='base.html')),
-    url(r'^', include(router.urls)),
+    url(r'^$', TemplateView.as_view(template_name='base.html')),
+    url(r'^api/', include(router.urls)),
+    url(r'^pippo/', pippo),
 
     # Examples:
     # url(r'^$', 'open_partecipate.views.home', name='home'),

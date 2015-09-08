@@ -27,16 +27,16 @@ class EnteCategoria(BaseCodelist):
     categoria_superiore = models.ForeignKey('self', related_name='categorie_figlie', default=None, null=True, limit_choices_to={'tipo': TIPO.categoria})
 
 
-class EnteEntrataVoce(BaseCodelist):
-    pass
+# class EnteEntrataVoce(BaseCodelist):
+#     pass
 
 
-class EnteUscitaVoce(BaseCodelist):
-    pass
+# class EnteUscitaVoce(BaseCodelist):
+#     pass
 
 
-class EnteUscitaSettore(BaseCodelist):
-    pass
+# class EnteUscitaSettore(BaseCodelist):
+#     pass
 
 
 class Ente(models.Model):
@@ -60,6 +60,7 @@ class Ente(models.Model):
     email = models.CharField(max_length=100, null=True)
     tipologia = models.CharField(max_length=2, choices=TIPOLOGIA, db_index=True)
     sottocategoria = models.ForeignKey(EnteCategoria, related_name='enti', limit_choices_to={'tipo': EnteCategoria.TIPO.sottocategoria})
+    indice_performance = models.DecimalField(max_digits=14, decimal_places=2, null=True)
 
     @cached_property
     def categoria(self):
@@ -69,28 +70,28 @@ class Ente(models.Model):
         return u'{}'.format(self.denominazione)
 
 
-class EnteEntrata(models.Model):
-    ente = models.ForeignKey(Ente, related_name='entrate')
-    anno = models.CharField(max_length=4)
-    importo = models.DecimalField(max_digits=14, decimal_places=2)
-    voce = models.ForeignKey(EnteEntrataVoce, related_name='entrate')
+# class EnteEntrata(models.Model):
+#     ente = models.ForeignKey(Ente, related_name='entrate')
+#     anno = models.CharField(max_length=4)
+#     importo = models.DecimalField(max_digits=14, decimal_places=2)
+#     voce = models.ForeignKey(EnteEntrataVoce, related_name='entrate')
+#
+#     def __unicode__(self):
+#         return u'{} ({}): {} ({})'.format(self.ente, self.anno, self.importo, self.voce)
+#
+#     class Meta:
+#         ordering = ['ente', 'anno']
 
-    def __unicode__(self):
-        return u'{} ({}): {} ({})'.format(self.ente, self.anno, self.importo, self.voce)
 
-    class Meta:
-        ordering = ['ente', 'anno']
-
-
-class EnteUscita(models.Model):
-    ente = models.ForeignKey(Ente, related_name='uscite')
-    anno = models.CharField(max_length=4)
-    importo = models.DecimalField(max_digits=14, decimal_places=2)
-    voce = models.ForeignKey(EnteUscitaVoce, related_name='uscite')
-    settore = models.ForeignKey(EnteUscitaSettore, related_name='uscite')
-
-    def __unicode__(self):
-        return u'{} ({}): {} ({})'.format(self.ente, self.anno, self.importo, self.voce)
-
-    class Meta:
-        ordering = ['ente', 'anno']
+# class EnteUscita(models.Model):
+#     ente = models.ForeignKey(Ente, related_name='uscite')
+#     anno = models.CharField(max_length=4)
+#     importo = models.DecimalField(max_digits=14, decimal_places=2)
+#     voce = models.ForeignKey(EnteUscitaVoce, related_name='uscite')
+#     settore = models.ForeignKey(EnteUscitaSettore, related_name='uscite')
+#
+#     def __unicode__(self):
+#         return u'{} ({}): {} ({})'.format(self.ente, self.anno, self.importo, self.voce)
+#
+#     class Meta:
+#         ordering = ['ente', 'anno']

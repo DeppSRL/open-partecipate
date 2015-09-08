@@ -59,9 +59,9 @@ class Command(BaseCommand):
 
     logger = logging.getLogger(__name__)
 
-    def read_csv(self, csv_stream):
+    def read_csv(self, csv):
         return pd.read_csv(
-            StringIO(csv_stream),
+            StringIO(csv),
             sep=';',
             header=0,
             low_memory=True,
@@ -102,26 +102,34 @@ class Command(BaseCommand):
         start_time = datetime.datetime.now()
 
         with zipfile.ZipFile(StringIO(archive)) as zfile:
-            df1 = self.read_csv(zfile.read('VOP_ANAGRAFICA.csv'))
-            df2 = self.read_csv(zfile.read('VOP_ANAGRAFICA_SERIE.csv'))
+            df = self.read_csv(zfile.read('VOP_ANAGRAFICA.csv'))
+            df_a = self.read_csv(zfile.read('VOP_ANAGRAFICA_SERIE.csv'))
+            df_e = self.read_csv(zfile.read('VOP_ENTRATE_SERIE.csv'))
+            df_s = self.read_csv(zfile.read('VOP_SPESE_SERIE.csv'))
 
-        df = pd.merge(df1, df2.drop('DT_ANNO_RIF', 1).drop_duplicates(), on='ID_ENTE')
+        df_a = df_a.drop('DT_ANNO_RIF', 1).drop_duplicates()
+        df_e = df_e.groupby('ID_ENTE', as_index=False)['Entrata'].sum()
+        df_s = df_s.groupby('ID_ENTE', as_index=False)['Spesa'].sum()
+
+        df = pd.merge(df, df_a, how='left', on='ID_ENTE')
+        df = pd.merge(df, df_e, how='left', on='ID_ENTE')
+        df = pd.merge(df, df_s, how='left', on='ID_ENTE')
 
         self.import_enti(df)
 
-        with zipfile.ZipFile(StringIO(archive)) as zfile:
-            df = self.read_csv(zfile.read('VOP_ENTRATE_SERIE.csv'))
-
-        df = df[df['Entrata'] > 0]
-
-        self.import_enti_entrate(df)
-
-        with zipfile.ZipFile(StringIO(archive)) as zfile:
-            df = self.read_csv(zfile.read('VOP_SPESE_SERIE.csv'))
-
-        df = df[df['Spesa'] > 0]
-
-        self.import_enti_uscite(df)
+        # with zipfile.ZipFile(StringIO(archive)) as zfile:
+        #     df = self.read_csv(zfile.read('VOP_ENTRATE_SERIE.csv'))
+        #
+        # df = df[df['Entrata'] > 0]
+        #
+        # self.import_enti_entrate(df)
+        #
+        # with zipfile.ZipFile(StringIO(archive)) as zfile:
+        #     df = self.read_csv(zfile.read('VOP_SPESE_SERIE.csv'))
+        #
+        # df = df[df['Spesa'] > 0]
+        #
+        # self.import_enti_uscite(df)
 
         duration = datetime.datetime.now() - start_time
         seconds = round(duration.total_seconds())
@@ -143,6 +151,7 @@ class Command(BaseCommand):
 
         for n, (index, row) in enumerate(df.iterrows(), 1):
             codice, denominazione = [x.strip() for x in row['ENTE'].split(' - ', 1)]
+            indice_performance = (row['Entrata'] - row['Spesa']) / row['Entrata'] if pd.notnull(row['Entrata']) and pd.notnull(row['Spesa']) else None
 
             ente = Ente.objects.create(
                 id=row['ID_ENTE'],
@@ -159,95 +168,96 @@ class Command(BaseCommand):
                 email=row['TS_EMAIL'],
                 tipologia=tipologia_desc2cod[row['TIPOLOGIA']],
                 sottocategoria=sottocategoria_cod2obj[row['SOTTOTIPO'].split(' - ', 1)[0]],
+                indice_performance=indice_performance,
             )
             self._log(u'{}/{} - Creato ente: {}'.format(n, df_count, ente))
 
-    def import_enti_entrate(self, df):
-        self.logger.info(u'Cancellazione entrate enti in corso ....')
-        EnteEntrata.objects.all().delete()
-        self.logger.info(u'Fatto.')
+    # def import_enti_entrate(self, df):
+    #     self.logger.info(u'Cancellazione entrate enti in corso ....')
+    #     EnteEntrata.objects.all().delete()
+    #     self.logger.info(u'Fatto.')
+    #
+    #     voce_cod2obj = self._import_codelist(df[['Voce']], EnteEntrataVoce)
+    #
+    #     df_count = len(df)
+    #
+    #     # transaction.set_autocommit(False)
+    #     #
+    #     # for n, (index, row) in enumerate(df.iterrows(), 1):
+    #     #     ente_entrata = EnteEntrata.objects.create(
+    #     #         ente_id=row['ID_ENTE'],
+    #     #         anno=row['Anno'],
+    #     #         importo=row['Entrata'],
+    #     #         voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+    #     #     )
+    #     #     self._log(u'{}/{} - Creata entrata ente: {}'.format(n, df_count, ente_entrata))
+    #     #
+    #     #     if (n % 5000 == 0) or (n == df_count):
+    #     #         self.logger.info(u'{}/{} -----------------> Commit.'.format(n, df_count))
+    #     #         transaction.commit()
+    #
+    #     insert_list = []
+    #
+    #     for n, (index, row) in enumerate(df.iterrows(), 1):
+    #         insert_list.append(
+    #             EnteEntrata(
+    #                 ente_id=row['ID_ENTE'],
+    #                 anno=row['Anno'],
+    #                 importo=row['Entrata'],
+    #                 voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+    #             )
+    #         )
+    #         self._log(u'{}/{} - Creata entrata ente: {}'.format(n, df_count, insert_list[-1]))
+    #
+    #         if (n % 5000 == 0) or (n == df_count):
+    #             self.logger.info(u'{}/{} -----------------> Salvataggio in corso.'.format(n, df_count))
+    #             EnteEntrata.objects.bulk_create(insert_list)
+    #             insert_list = []
 
-        voce_cod2obj = self._import_codelist(df[['Voce']], EnteEntrataVoce)
-
-        df_count = len(df)
-
-        # transaction.set_autocommit(False)
-        #
-        # for n, (index, row) in enumerate(df.iterrows(), 1):
-        #     ente_entrata = EnteEntrata.objects.create(
-        #         ente_id=row['ID_ENTE'],
-        #         anno=row['Anno'],
-        #         importo=row['Entrata'],
-        #         voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
-        #     )
-        #     self._log(u'{}/{} - Creata entrata ente: {}'.format(n, df_count, ente_entrata))
-        #
-        #     if (n % 5000 == 0) or (n == df_count):
-        #         self.logger.info(u'{}/{} -----------------> Commit.'.format(n, df_count))
-        #         transaction.commit()
-
-        insert_list = []
-
-        for n, (index, row) in enumerate(df.iterrows(), 1):
-            insert_list.append(
-                EnteEntrata(
-                    ente_id=row['ID_ENTE'],
-                    anno=row['Anno'],
-                    importo=row['Entrata'],
-                    voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
-                )
-            )
-            self._log(u'{}/{} - Creata entrata ente: {}'.format(n, df_count, insert_list[-1]))
-
-            if (n % 5000 == 0) or (n == df_count):
-                self.logger.info(u'{}/{} -----------------> Salvataggio in corso.'.format(n, df_count))
-                EnteEntrata.objects.bulk_create(insert_list)
-                insert_list = []
-
-    def import_enti_uscite(self, df):
-        self.logger.info(u'Cancellazione uscite enti in corso ....')
-        EnteUscita.objects.all().delete()
-        self.logger.info(u'Fatto.')
-
-        voce_cod2obj = self._import_codelist(df[['Voce']], EnteUscitaVoce)
-        settore_cod2obj = self._import_codelist(df[['Settore']], EnteUscitaSettore)
-
-        df_count = len(df)
-
-        # transaction.set_autocommit(False)
-        #
-        # for n, (index, row) in enumerate(df.iterrows(), 1):
-        #     ente_uscita = EnteUscita.objects.create(
-        #         ente_id=row['ID_ENTE'],
-        #         anno=row['Anno'],
-        #         importo=row['Spesa'],
-        #         voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
-        #         settore=settore_cod2obj[row['Settore'].split(' - ', 1)[0]],
-        #     )
-        #     self._log(u'{}/{} - Creata uscita ente: {}'.format(n, df_count, ente_uscita))
-        #
-        #     if (n % 5000 == 0) or (n == df_count):
-        #         self.logger.info(u'{}/{} -----------------> Commit.'.format(n, df_count))
-        #         transaction.commit()
-
-        insert_list = []
-
-        for n, (index, row) in enumerate(df.iterrows(), 1):
-            insert_list.append(
-                EnteUscita(
-                    ente_id=row['ID_ENTE'],
-                    anno=row['Anno'],
-                    importo=row['Spesa'],
-                    voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
-                    settore=settore_cod2obj[row['Settore'].split(' - ', 1)[0]],
-                )
-            )
-            self._log(u'{}/{} - Creata uscita ente: {}'.format(n, df_count, insert_list[-1]))
-
-            if (n % 5000 == 0) or (n == df_count):
-                self.logger.info(u'{}/{} -----------------> Salvataggio in corso.'.format(n, df_count))
-                EnteUscita.objects.bulk_create(insert_list)
-                insert_list = []
+    # def import_enti_uscite(self, df):
+    #     self.logger.info(u'Cancellazione uscite enti in corso ....')
+    #     EnteUscita.objects.all().delete()
+    #     self.logger.info(u'Fatto.')
+    #
+    #     voce_cod2obj = self._import_codelist(df[['Voce']], EnteUscitaVoce)
+    #     settore_cod2obj = self._import_codelist(df[['Settore']], EnteUscitaSettore)
+    #
+    #     df_count = len(df)
+    #
+    #     # transaction.set_autocommit(False)
+    #     #
+    #     # for n, (index, row) in enumerate(df.iterrows(), 1):
+    #     #     ente_uscita = EnteUscita.objects.create(
+    #     #         ente_id=row['ID_ENTE'],
+    #     #         anno=row['Anno'],
+    #     #         importo=row['Spesa'],
+    #     #         voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+    #     #         settore=settore_cod2obj[row['Settore'].split(' - ', 1)[0]],
+    #     #     )
+    #     #     self._log(u'{}/{} - Creata uscita ente: {}'.format(n, df_count, ente_uscita))
+    #     #
+    #     #     if (n % 5000 == 0) or (n == df_count):
+    #     #         self.logger.info(u'{}/{} -----------------> Commit.'.format(n, df_count))
+    #     #         transaction.commit()
+    #
+    #     insert_list = []
+    #
+    #     for n, (index, row) in enumerate(df.iterrows(), 1):
+    #         insert_list.append(
+    #             EnteUscita(
+    #                 ente_id=row['ID_ENTE'],
+    #                 anno=row['Anno'],
+    #                 importo=row['Spesa'],
+    #                 voce=voce_cod2obj[row['Voce'].split(' - ', 1)[0]],
+    #                 settore=settore_cod2obj[row['Settore'].split(' - ', 1)[0]],
+    #             )
+    #         )
+    #         self._log(u'{}/{} - Creata uscita ente: {}'.format(n, df_count, insert_list[-1]))
+    #
+    #         if (n % 5000 == 0) or (n == df_count):
+    #             self.logger.info(u'{}/{} -----------------> Salvataggio in corso.'.format(n, df_count))
+    #             EnteUscita.objects.bulk_create(insert_list)
+    #             insert_list = []
 
     @transaction.atomic
     def _import_enti_categoria(self, df):
