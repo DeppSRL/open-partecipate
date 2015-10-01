@@ -76,8 +76,8 @@ def overview(request):
                     conditions['indice_performance__lte'] = range['to']
 
             if query.get('type'):
-                # conditions['sottotipo_id__in'] = query['type']
-                conditions['tipologia__in'] = query['type']
+                conditions['categoria_id__in'] = query['type']
+                # conditions['tipologia__in'] = query['type']
 
             if query.get('sector'):
                 conditions['regioni_settori__settore__in'] = query['sector']
@@ -115,8 +115,8 @@ def overview(request):
             },
             {
                 'id': 'type',
-                # 'data': [{'id': x.pk, 'label': x.descrizione, 'value': x.num_enti} for x in EntePartecipatoSottotipo.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia')).order_by('-num_enti')],
-                'data': [{'id': x['tipologia'], 'label': EntePartecipatoCronologia.TIPOLOGIA[x['tipologia']], 'value': x['num_enti']} for x in enti_partecipati_cronologia.values('tipologia').annotate(num_enti=Count('tipologia')).order_by('-num_enti')],
+                'data': [{'id': x.pk, 'label': x.descrizione, 'value': x.num_enti} for x in EntePartecipatoCategoria.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia')).order_by('-num_enti')],
+                # 'data': [{'id': x['tipologia'], 'label': EntePartecipatoCronologia.TIPOLOGIA[x['tipologia']], 'value': x['num_enti']} for x in enti_partecipati_cronologia.values('tipologia').annotate(num_enti=Count('tipologia')).order_by('-num_enti')],
             },
             {
                 'id': 'sector',
@@ -193,7 +193,7 @@ def detail(request):
                 'id': 'detail',
                 'data': {
                     'ente': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
-                    'categoriaEnte': ente_partecipato_cronologia.get_tipologia_display(),
+                    'categoriaEnte': ente_partecipato_cronologia.categoria.descrizione,
                     'sottocategoriaEnte': '',
                     'sottotipoEnte': ente_partecipato_cronologia.sottotipo.descrizione,
                     'fax': ente_partecipato_cronologia.ente_partecipato.fax,

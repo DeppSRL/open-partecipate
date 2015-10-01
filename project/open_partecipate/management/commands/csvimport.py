@@ -179,6 +179,7 @@ class Command(BaseCommand):
         self.logger.info(u'Fatto.')
 
         tipologia_desc2cod = {x[1]: x[0] for x in EntePartecipatoCronologia.TIPOLOGIA}
+        categoria_desc2obj = self._import_enti_partecipati_categoria(df)
         sottotipo_cod2obj = self._import_codelist(df[['sottotipo']], EntePartecipatoSottotipo)
 
         df_count = len(df)
@@ -188,6 +189,7 @@ class Command(BaseCommand):
                 ente_partecipato_id=row['codice'],
                 anno_riferimento=row['anno_rif'],
                 tipologia=tipologia_desc2cod[row['tipologia']],
+                categoria=categoria_desc2obj[row['categoria']],
                 sottotipo=sottotipo_cod2obj[row['sottotipo'].split(' - ', 1)[0]],
                 fatturato=row['fatturato'],
                 indice_performance=row['indice_performance'],
@@ -258,6 +260,24 @@ class Command(BaseCommand):
             self._log(u'{}/{} - Creato ente azionista: {}'.format(n, df_count, ente_azionista))
 
     @transaction.atomic
+    def _import_enti_partecipati_categoria(self, df):
+        df = df[['categoria']].drop_duplicates().sort()
+        df_count = len(df)
+
+        desc2obj = {}
+
+        for n, (index, row) in enumerate(df.iterrows(), 1):
+            object, created = EntePartecipatoCategoria.objects.get_or_create(
+                descrizione=row['categoria']
+            )
+
+            desc2obj[object.descrizione] = object
+
+            self._log(u'{}/{} - Creata categoria: {}'.format(n, df_count, object), created)
+
+        return desc2obj
+
+    @transaction.atomic
     def _import_codelist(self, df, model):
         df = df.drop_duplicates().sort()
         df_count = len(df)
@@ -289,7 +309,7 @@ class Command(BaseCommand):
 
 def get_ente(row):
     if not hasattr(get_ente, 'regione_den2obj'):
-        get_ente.regione_den2obj = {x.denominazione.replace('-', ' ').split('/')[0]: x for x in Territorio.objects.regioni()}
+        get_ente.regione_den2obj = {x.denominazione.replace('-', ' ').replace('PROVINCIA AUTONOMA DI ', '').split('/')[0]: x for x in Territorio.objects.regioni()}
 
     ente, _ = Ente.objects.get_or_create(
         id=row['codice'],

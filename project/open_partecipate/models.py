@@ -25,6 +25,16 @@ class EntePartecipatoSettore(BaseCodelist):
     pass
 
 
+class EntePartecipatoCategoria(models.Model):
+    descrizione = models.CharField(max_length=80)
+
+    def __unicode__(self):
+        return u'{}'.format(self.descrizione)
+
+    class Meta:
+        ordering = ['descrizione']
+
+
 class Ente(models.Model):
     id = models.IntegerField(primary_key=True)
     codice_fiscale = models.CharField(max_length=16, null=True)
@@ -76,6 +86,7 @@ class EntePartecipatoCronologia(models.Model):
     ente_partecipato = models.ForeignKey(EntePartecipato, related_name='cronologia')
     anno_riferimento = models.CharField(max_length=4)
     tipologia = models.CharField(max_length=2, choices=TIPOLOGIA, db_index=True)
+    categoria = models.ForeignKey(EntePartecipatoCategoria, related_name='enti_partecipati_cronologia')
     sottotipo = models.ForeignKey(EntePartecipatoSottotipo, related_name='enti_partecipati_cronologia')
     fatturato = models.DecimalField(max_digits=14, decimal_places=2, null=True)
     indice_performance = models.DecimalField(max_digits=5, decimal_places=2, null=True)
