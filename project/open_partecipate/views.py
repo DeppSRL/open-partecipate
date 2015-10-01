@@ -14,7 +14,7 @@ def index(request):
         ('overview', request.build_absolute_uri('overview/')),
         ('detail', request.build_absolute_uri('detail/')),
         ('entity-search', request.build_absolute_uri('entity-search/')),
-        ('shareholder-search', request.build_absolute_uri('overview/')),
+        ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
     ])
 
     return JsonResponse(data)
