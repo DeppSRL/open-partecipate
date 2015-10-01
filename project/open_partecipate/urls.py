@@ -5,21 +5,25 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-from views import EnteViewSet, pippo
+from views import *
 
 # load admin modules
 from django.contrib import admin
 admin.autodiscover()
 
-from rest_framework import routers
+# from rest_framework import routers
 
-router = routers.DefaultRouter()
-router.register(r'enti', EnteViewSet)
+# router = routers.DefaultRouter()
+# router.register(r'enti', EnteViewSet)
 
 urls = (
-    url(r'^$', TemplateView.as_view(template_name='base.html')),
-    url(r'^api/', include(router.urls)),
-    url(r'^pippo/', pippo),
+    # url(r'^$', TemplateView.as_view(template_name='base.html')),
+    # url(r'^api/', include(router.urls)),
+    url(r'^$', index),
+    url(r'^overview/', overview),
+    url(r'^detail/', detail),
+    url(r'^entity-search/', autocomplete, {'target': 'entity'}),
+    url(r'^shareholder-search/', autocomplete, {'target': 'shareholder'}),
 
     # Examples:
     # url(r'^$', 'open_partecipate.views.home', name='home'),

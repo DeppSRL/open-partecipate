@@ -6,4 +6,4 @@ from rest_framework import serializers
 class EnteSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Ente
-        fields = ('denominazione', 'codice', 'tipologia')
+        fields = ('denominazione', 'id', 'codice_fiscale')
