@@ -1,12 +1,28 @@
 # -*- coding: utf-8 -*-
 # from rest_framework import viewsets
 # from serializers import EnteSerializer
+import decimal
 import json
 from collections import OrderedDict
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from models import *
+
+
+class MyJSONEncoder(DjangoJSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return float(o)
+        else:
+            return super(MyJSONEncoder, self).default(o)
+
+
+class MyJsonResponse(JsonResponse):
+    def __init__(self, *args, **kwargs):
+        super(MyJsonResponse, self).__init__(encoder=MyJSONEncoder, *args, **kwargs)
+        self['Access-Control-Allow-Origin'] = '*'
 
 
 def index(request):
@@ -17,7 +33,7 @@ def index(request):
         ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
     ])
 
-    return JsonResponse(data)
+    return MyJsonResponse(data)
 
 
 def overview(request):
@@ -145,13 +161,13 @@ def overview(request):
                         },
                         {
                             'label': 'Quota pubblica',
-                            'value': averages['quota'],
+                            'value': averages['quota'] / 100,
                             'progress': averages['quota'] / 100,
                             'format': '%',
                         },
                         {
                             'label': 'Indicatore di performance',
-                            'value': averages['performance'],
+                            'value': averages['performance'] / 100,
                             'progress': averages['performance'] / 100,
                             'format': '%',
                         },
@@ -173,7 +189,7 @@ def overview(request):
         ],
     }
 
-    return JsonResponse(data)
+    return MyJsonResponse(data)
 
 
 def detail(request):
@@ -260,7 +276,7 @@ def detail(request):
         ],
     }
 
-    return JsonResponse(data)
+    return MyJsonResponse(data)
 
 
 def autocomplete(request, target):
@@ -281,7 +297,7 @@ def autocomplete(request, target):
                 conditions['enteazionista__isnull'] = False
             data['data'] = [{'id': x.id, 'label': x.denominazione} for x in Ente.objects.filter(**conditions)]
 
-    return JsonResponse(data)
+    return MyJsonResponse(data)
 
 
 # class JSONResponseMixin(object):
