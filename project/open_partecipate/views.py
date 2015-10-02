@@ -23,6 +23,8 @@ class MyJsonResponse(JsonResponse):
     def __init__(self, *args, **kwargs):
         super(MyJsonResponse, self).__init__(encoder=MyJSONEncoder, *args, **kwargs)
         self['Access-Control-Allow-Origin'] = '*'
+        self['Access-Control-Allow-Methods'] = 'POST,PUT,GET'
+        self['Access-Control-Allow-Headers'] = 'content-type'
 
 
 def index(request):
