@@ -121,7 +121,7 @@ def overview(request):
         'item': [
             {
                 'id': 'entity',
-                'data': [{'id': x.ente_partecipato_id, 'x': x.indice_performance, 'y': x.quota_pubblica, 'r': x.fatturato, 'codiceFiscale': x.ente_partecipato.ente.codice_fiscale, 'regione': x.ente_partecipato.ente.regione.denominazione if x.ente_partecipato.ente.regione else None} for x in enti_partecipati_cronologia],
+                'data': [{'id': x.ente_partecipato_id, 'x': x.indice_performance, 'y': x.quota_pubblica, 'r': x.fatturato, 'codiceFiscale': x.ente_partecipato.ente.codice_fiscale, 'regione': x.ente_partecipato.ente.regione.denominazione if x.ente_partecipato.ente.regione else None} for x in enti_partecipati_cronologia.order_by('-fatturato')[:50]],
             },
             {
                 'id': 'area',
