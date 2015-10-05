@@ -75,14 +75,14 @@ def overview(request):
             conditions['fatturato__lte'] = range['to']
 
     if request.GET.get('quota') and request.GET['quota'] in quota_range:
-        range = dimension_range[request.GET['quota']]
+        range = quota_range[request.GET['quota']]
         if 'from' in range:
             conditions['quota_pubblica__gt'] = range['from']
         if 'to' in range:
             conditions['quota_pubblica__lte'] = range['to']
 
     if request.GET.get('performance') and request.GET['performance'] in performance_range:
-        range = dimension_range[request.GET['performance']]
+        range = performance_range[request.GET['performance']]
         if 'from' in range:
             conditions['indice_performance__gt'] = range['from']
         if 'to' in range:
