@@ -17,7 +17,7 @@ class Command(BaseCommand):
             territorio.tipo = Territorio.TIPO.R
             territorio.cod_reg = territorio.cod_prov
             territorio.cod_prov = None
-            territorio.denominazione = name
+            territorio.denominazione = 'P.A. DI {}'.format(name)
             territorio.slug = None
 
             territorio.save()

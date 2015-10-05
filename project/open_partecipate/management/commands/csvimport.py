@@ -309,7 +309,7 @@ class Command(BaseCommand):
 
 def get_ente(row):
     if not hasattr(get_ente, 'regione_den2obj'):
-        get_ente.regione_den2obj = {x.denominazione.replace('-', ' ').replace('PROVINCIA AUTONOMA DI ', '').split('/')[0]: x for x in Territorio.objects.regioni()}
+        get_ente.regione_den2obj = {x.denominazione.upper().replace('-', ' ').split('/')[0]: x for x in Territorio.objects.regioni()}
 
     ente, _ = Ente.objects.get_or_create(
         id=row['codice'],
