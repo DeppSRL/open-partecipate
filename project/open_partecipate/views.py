@@ -62,46 +62,44 @@ def overview(request):
     conditions['anno_riferimento'] = '2013'
 
     if request.is_ajax():
-        if request.method == 'POST':
-            json_data=json.loads(request.body)
-            query = json_data['query']
+        query = request.GET['query']
 
-            if query.get('entityId'):
-                conditions['ente_partecipato_id'] = query['entityId']
+        if query.get('entityId'):
+            conditions['ente_partecipato_id'] = query['entityId']
 
-            if query.get('area'):
-                conditions['regioni_settori__regione'] = query['area']
+        if query.get('area'):
+            conditions['regioni_settori__regione'] = query['area']
 
-            if query.get('dimension') and query['dimension'] in dimension_range:
-                range = dimension_range[query['dimension']]
-                if 'from' in range:
-                    conditions['fatturato__gt'] = range['from']
-                if 'to' in range:
-                    conditions['fatturato__lte'] = range['to']
+        if query.get('dimension') and query['dimension'] in dimension_range:
+            range = dimension_range[query['dimension']]
+            if 'from' in range:
+                conditions['fatturato__gt'] = range['from']
+            if 'to' in range:
+                conditions['fatturato__lte'] = range['to']
 
-            if query.get('quota') and query['quota'] in quota_range:
-                range = dimension_range[query['quota']]
-                if 'from' in range:
-                    conditions['quota_pubblica__gt'] = range['from']
-                if 'to' in range:
-                    conditions['quota_pubblica__lte'] = range['to']
+        if query.get('quota') and query['quota'] in quota_range:
+            range = dimension_range[query['quota']]
+            if 'from' in range:
+                conditions['quota_pubblica__gt'] = range['from']
+            if 'to' in range:
+                conditions['quota_pubblica__lte'] = range['to']
 
-            if query.get('performance') and query['performance'] in performance_range:
-                range = dimension_range[query['performance']]
-                if 'from' in range:
-                    conditions['indice_performance__gt'] = range['from']
-                if 'to' in range:
-                    conditions['indice_performance__lte'] = range['to']
+        if query.get('performance') and query['performance'] in performance_range:
+            range = dimension_range[query['performance']]
+            if 'from' in range:
+                conditions['indice_performance__gt'] = range['from']
+            if 'to' in range:
+                conditions['indice_performance__lte'] = range['to']
 
-            if query.get('type'):
-                conditions['categoria_id__in'] = query['type']
-                # conditions['tipologia__in'] = query['type']
+        if query.get('type'):
+            conditions['categoria_id__in'] = query['type']
+            # conditions['tipologia__in'] = query['type']
 
-            if query.get('sector'):
-                conditions['regioni_settori__settore__in'] = query['sector']
+        if query.get('sector'):
+            conditions['regioni_settori__settore__in'] = query['sector']
 
-            if query.get('shareholderId'):
-                conditions['regioni_settori__settore__in'] = query['shareholderId']
+        if query.get('shareholderId'):
+            conditions['regioni_settori__settore__in'] = query['shareholderId']
 
     related = ['ente_partecipato__ente__regione']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**conditions).distinct().select_related(*related).prefetch_related(*related)
