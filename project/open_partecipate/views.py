@@ -61,43 +61,42 @@ def overview(request):
 
     conditions['anno_riferimento'] = '2013'
 
-    if request.is_ajax():
-        if request.GET.get('entityId'):
-            conditions['ente_partecipato_id'] = request.GET['entityId']
+    if request.GET.get('entityId'):
+        conditions['ente_partecipato_id'] = request.GET['entityId']
 
-        if request.GET.get('area'):
-            conditions['regioni_settori__regione'] = request.GET['area']
+    if request.GET.get('area'):
+        conditions['regioni_settori__regione'] = request.GET['area']
 
-        if request.GET.get('dimension') and request.GET['dimension'] in dimension_range:
-            range = dimension_range[request.GET['dimension']]
-            if 'from' in range:
-                conditions['fatturato__gt'] = range['from']
-            if 'to' in range:
-                conditions['fatturato__lte'] = range['to']
+    if request.GET.get('dimension') and request.GET['dimension'] in dimension_range:
+        range = dimension_range[request.GET['dimension']]
+        if 'from' in range:
+            conditions['fatturato__gt'] = range['from']
+        if 'to' in range:
+            conditions['fatturato__lte'] = range['to']
 
-        if request.GET.get('quota') and request.GET['quota'] in quota_range:
-            range = dimension_range[request.GET['quota']]
-            if 'from' in range:
-                conditions['quota_pubblica__gt'] = range['from']
-            if 'to' in range:
-                conditions['quota_pubblica__lte'] = range['to']
+    if request.GET.get('quota') and request.GET['quota'] in quota_range:
+        range = dimension_range[request.GET['quota']]
+        if 'from' in range:
+            conditions['quota_pubblica__gt'] = range['from']
+        if 'to' in range:
+            conditions['quota_pubblica__lte'] = range['to']
 
-        if request.GET.get('performance') and request.GET['performance'] in performance_range:
-            range = dimension_range[request.GET['performance']]
-            if 'from' in range:
-                conditions['indice_performance__gt'] = range['from']
-            if 'to' in range:
-                conditions['indice_performance__lte'] = range['to']
+    if request.GET.get('performance') and request.GET['performance'] in performance_range:
+        range = dimension_range[request.GET['performance']]
+        if 'from' in range:
+            conditions['indice_performance__gt'] = range['from']
+        if 'to' in range:
+            conditions['indice_performance__lte'] = range['to']
 
-        if request.GET.get('type'):
-            conditions['categoria_id__in'] = request.GET['type']
-            # conditions['tipologia__in'] = request.GET['type']
+    if request.GET.get('type'):
+        conditions['categoria_id__in'] = request.GET['type']
+        # conditions['tipologia__in'] = request.GET['type']
 
-        if request.GET.get('sector'):
-            conditions['regioni_settori__settore__in'] = request.GET['sector']
+    if request.GET.get('sector'):
+        conditions['regioni_settori__settore__in'] = request.GET['sector']
 
-        if request.GET.get('shareholderId'):
-            conditions['regioni_settori__settore__in'] = request.GET['shareholderId']
+    if request.GET.get('shareholderId'):
+        conditions['regioni_settori__settore__in'] = request.GET['shareholderId']
 
     related = ['ente_partecipato__ente__regione']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**conditions).distinct().select_related(*related).prefetch_related(*related)
@@ -191,9 +190,8 @@ def overview(request):
 
 
 def detail(request):
-    if request.is_ajax():
-        if request.GET.get('entityId'):
-            entityId = request.GET['entityId']
+    if request.GET.get('entityId'):
+        entityId = request.GET['entityId']
 
     entityId = 7
     ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia, ente_partecipato_id=entityId)
@@ -278,9 +276,8 @@ def autocomplete(request, target):
         'data': [],
     }
 
-    if request.is_ajax():
-        input = request.GET.get('input')
-
+    input = request.GET.get('input')
+    if input:
         conditions = {}
         conditions['denominazione__istartswith'] = input
         if target == 'entity':
