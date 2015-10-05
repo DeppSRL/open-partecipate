@@ -89,14 +89,14 @@ def overview(request):
             conditions['indice_performance__lte'] = range['to']
 
     if request.GET.get('type'):
-        conditions['categoria_id__in'] = request.GET['type']
+        conditions['categoria_id__in'] = request.GET['type'].split(',')
         # conditions['tipologia__in'] = request.GET['type']
 
     if request.GET.get('sector'):
-        conditions['regioni_settori__settore__in'] = request.GET['sector']
+        conditions['regioni_settori__settore__in'] = request.GET['sector'].split(',')
 
     if request.GET.get('shareholderId'):
-        conditions['regioni_settori__settore__in'] = request.GET['shareholderId']
+        conditions['quote__ente_azionista__in'] = request.GET['shareholderId'].split(',')
 
     related = ['ente_partecipato__ente__regione']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**conditions).distinct().select_related(*related).prefetch_related(*related)
@@ -109,9 +109,9 @@ def overview(request):
             ranking_ids += enti_partecipati_cronologia.order_by('{}{}'.format(order_by_direction, order_by_field)).values_list('id', flat=True)[:ranking_num_items]
 
     averages = {
-        'dimension': enti_partecipati_cronologia.aggregate(Avg('fatturato'))['fatturato__avg'],
-        'quota': enti_partecipati_cronologia.aggregate(Avg('quota_pubblica'))['quota_pubblica__avg'],
-        'performance': enti_partecipati_cronologia.aggregate(Avg('indice_performance'))['indice_performance__avg'],
+        'dimension': enti_partecipati_cronologia.aggregate(Avg('fatturato'))['fatturato__avg'] or 0,
+        'quota': enti_partecipati_cronologia.aggregate(Avg('quota_pubblica'))['quota_pubblica__avg'] or 0,
+        'performance': enti_partecipati_cronologia.aggregate(Avg('indice_performance'))['indice_performance__avg'] or 0,
     }
 
     data = {
