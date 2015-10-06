@@ -122,7 +122,7 @@ def overview(request):
                 'data': [{
                             'id': x.ente_partecipato_id,
                             'r': x.fatturato,
-                            'x': x.indice_performance / 100if x.indice_performance else x.indice_performance,
+                            'x': x.indice_performance / 100 if x.indice_performance else x.indice_performance,
                             'y': x.quota_pubblica / 100 if x.quota_pubblica else x.quota_pubblica,
                             'name': x.ente_partecipato.ente.denominazione,
                             'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
