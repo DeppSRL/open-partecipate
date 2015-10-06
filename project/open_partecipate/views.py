@@ -107,7 +107,7 @@ def overview(request):
     ranking_ids = []
     for order_by_field in ['fatturato', 'quota_pubblica', 'indice_performance']:
         for order_by_direction in ['', '-']:
-            ranking_ids += enti_partecipati_cronologia.order_by('{}{}'.format(order_by_direction, order_by_field)).values_list('id', flat=True)[:ranking_num_items]
+            ranking_ids += enti_partecipati_cronologia.exclude(**{'{}__isnull'.format(order_by_field): True}).order_by('{}{}'.format(order_by_direction, order_by_field)).values_list('id', flat=True)[:ranking_num_items]
 
     averages = {
         'dimension': enti_partecipati_cronologia.aggregate(Avg('fatturato'))['fatturato__avg'] or 0,
