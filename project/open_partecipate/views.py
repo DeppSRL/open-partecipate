@@ -122,8 +122,8 @@ def overview(request):
                 'data': [{
                             'id': x.ente_partecipato_id,
                             'r': x.fatturato,
-                            'x': x.indice_performance,
-                            'y': x.quota_pubblica,
+                            'x': x.indice_performance / 100if x.indice_performance else x.indice_performance,
+                            'y': x.quota_pubblica / 100 if x.quota_pubblica else x.quota_pubblica,
                             'name': x.ente_partecipato.ente.denominazione,
                             'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
                             'fiscal_code': x.ente_partecipato.ente.codice_fiscale,
@@ -148,7 +148,7 @@ def overview(request):
             },
             {
                 'id': 'ranking',
-                'data': [{'id': x.ente_partecipato.ente.id, 'label': x.ente_partecipato.ente.denominazione, 'description': '', 'dimension': x.fatturato, 'quota': x.quota_pubblica, 'performance': x.indice_performance} for x in EntePartecipatoCronologia.objects.filter(pk__in=ranking_ids).select_related('ente_partecipato__ente')],
+                'data': [{'id': x.ente_partecipato.ente.id, 'label': x.ente_partecipato.ente.denominazione, 'description': '', 'dimension': x.fatturato, 'quota': x.quota_pubblica / 100 if x.quota_pubblica else x.quota_pubblica, 'performance': x.indice_performance / 100 if x.indice_performance else x.indice_performance} for x in EntePartecipatoCronologia.objects.filter(pk__in=ranking_ids).select_related('ente_partecipato__ente')],
             },
             {
                 'id': 'shareholder',
@@ -171,13 +171,13 @@ def overview(request):
                             'label': 'Quota pubblica',
                             'value': averages['quota'] / 100,
                             'progress': averages['quota'] / 100,
-                            'format': '%',
+                            'format': '0.0%',
                         },
                         {
                             'label': 'Indicatore di performance',
                             'value': averages['performance'] / 100,
                             'progress': averages['performance'] / 100,
-                            'format': '%',
+                            'format': '0.0%',
                         },
                     ],
                 },
