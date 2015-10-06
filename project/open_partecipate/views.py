@@ -39,6 +39,7 @@ def index(request):
 
 
 def overview(request):
+    entity_num_items = 50
     ranking_num_items = 50
 
     dimension_range = {
@@ -98,7 +99,7 @@ def overview(request):
     if request.GET.get('shareholderId'):
         conditions['quote__ente_azionista__in'] = request.GET['shareholderId'].split(',')
 
-    related = ['ente_partecipato__ente__regione']
+    related = ['ente_partecipato__ente', 'regioni_settori__settore']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**conditions).distinct().select_related(*related).prefetch_related(*related)
 
     counter = enti_partecipati_cronologia.count()
@@ -118,7 +119,17 @@ def overview(request):
         'item': [
             {
                 'id': 'entity',
-                'data': [{'id': x.ente_partecipato_id, 'x': x.indice_performance, 'y': x.quota_pubblica, 'r': x.fatturato, 'codiceFiscale': x.ente_partecipato.ente.codice_fiscale, 'regione': x.ente_partecipato.ente.regione.denominazione if x.ente_partecipato.ente.regione else None} for x in enti_partecipati_cronologia.order_by('-fatturato')[:50]],
+                'data': [{
+                            'id': x.ente_partecipato_id,
+                            'r': x.fatturato,
+                            'x': x.indice_performance,
+                            'y': x.quota_pubblica,
+                            'name': x.ente_partecipato.ente.denominazione,
+                            'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
+                            'fiscal_code': x.ente_partecipato.ente.codice_fiscale,
+                            'sector': '|'.join(set([s.settore.descrizione for s in x.regioni_settori.all()])),
+                            'type': x.categoria.descrizione,
+                         } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]],
             },
             {
                 'id': 'area',
