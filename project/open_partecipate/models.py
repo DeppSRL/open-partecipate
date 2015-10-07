@@ -83,6 +83,14 @@ class EntePartecipatoCronologia(models.Model):
         ('IL', 'impresepubblichelocali', u'Imprese pubbliche locali'),
     )
 
+    FATTURATO_CLUSTERS = [
+        {'to': 100},
+        {'from': 100, 'to': 1000},
+        {'from': 1000, 'to': 10000},
+        {'from': 10000, 'to': 100000},
+        {'from': 100000},
+    ]
+
     ente_partecipato = models.ForeignKey(EntePartecipato, related_name='cronologia')
     anno_riferimento = models.CharField(max_length=4)
     tipologia = models.CharField(max_length=2, choices=TIPOLOGIA, db_index=True)
@@ -100,6 +108,17 @@ class EntePartecipatoCronologia(models.Model):
     altri_soci_noti_pubblici = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     altri_soci_noti_privati = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     altri_soci_non_noti = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+
+    settori = models.ManyToManyField(EntePartecipatoSettore, through='EntePartecipatoCronologiaRegioneSettore', related_name='enti_partecipati_cronologia')
+    regioni = models.ManyToManyField(Territorio, through='EntePartecipatoCronologiaRegioneSettore', related_name='enti_partecipati_cronologia')
+
+    @cached_property
+    def fatturato_cluster(self):
+        for cluster in self.FATTURATO_CLUSTERS:
+            if 'to' in cluster and self.fatturato <= cluster['to']:
+                return cluster
+
+        return self.FATTURATO_CLUSTERS[-1:]
 
     def __unicode__(self):
         return u'{}'.format(self.ente_partecipato_id)

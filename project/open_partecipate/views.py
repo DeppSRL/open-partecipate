@@ -2,13 +2,19 @@
 # from rest_framework import viewsets
 # from serializers import EnteSerializer
 import decimal
-import json
 from collections import OrderedDict
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from models import *
+
+
+def div100(value):
+    try:
+        return value / 100
+    except Exception:
+        return value
 
 
 class MyJSONEncoder(DjangoJSONEncoder):
@@ -58,48 +64,57 @@ def overview(request):
         'L': {'from': 75},
     }
 
+    params = request.GET
+
     conditions = {}
 
     conditions['anno_riferimento'] = '2013'
 
-    if request.GET.get('entityId'):
-        conditions['ente_partecipato_id'] = request.GET['entityId']
+    entityId = params.get('entityId')
+    if entityId:
+        conditions['ente_partecipato_id'] = entityId
 
-    if request.GET.get('area'):
-        conditions['regioni_settori__regione'] = request.GET['area']
+    area = params.get('area')
+    if area:
+        conditions['regioni__cod_reg'] = area
 
-    if request.GET.get('dimension') and request.GET['dimension'] in dimension_range:
-        range = dimension_range[request.GET['dimension']]
+    dimension = params.get('dimension')
+    if dimension in dimension_range:
+        range = dimension_range[dimension]
         if 'from' in range:
             conditions['fatturato__gt'] = range['from']
         if 'to' in range:
             conditions['fatturato__lte'] = range['to']
 
-    if request.GET.get('quota') and request.GET['quota'] in quota_range:
-        range = quota_range[request.GET['quota']]
+    quota = params.get('quota')
+    if quota in quota_range:
+        range = quota_range[quota]
         if 'from' in range:
             conditions['quota_pubblica__gt'] = range['from']
         if 'to' in range:
             conditions['quota_pubblica__lte'] = range['to']
 
-    if request.GET.get('performance') and request.GET['performance'] in performance_range:
-        range = performance_range[request.GET['performance']]
+    performance = params.get('performance')
+    if performance in performance_range:
+        range = performance_range[performance]
         if 'from' in range:
             conditions['indice_performance__gt'] = range['from']
         if 'to' in range:
             conditions['indice_performance__lte'] = range['to']
 
-    if request.GET.get('type'):
-        conditions['categoria_id__in'] = request.GET['type'].split(',')
-        # conditions['tipologia__in'] = request.GET['type']
+    type = params.get('type')
+    if type:
+        conditions['categoria_id__in'] = type.split(',')
 
-    if request.GET.get('sector'):
-        conditions['regioni_settori__settore__in'] = request.GET['sector'].split(',')
+    sector = params.get('sector')
+    if sector:
+        conditions['settori__in'] = sector.split(',')
 
-    if request.GET.get('shareholderId'):
-        conditions['quote__ente_azionista__in'] = request.GET['shareholderId'].split(',')
+    shareholderId = params.get('shareholderId')
+    if shareholderId:
+        conditions['quote__ente_azionista__in'] = shareholderId.split(',')
 
-    related = ['ente_partecipato__ente', 'regioni_settori__settore']
+    related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria', 'settori']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**conditions).distinct().select_related(*related).prefetch_related(*related)
 
     counter = enti_partecipati_cronologia.count()
@@ -111,30 +126,33 @@ def overview(request):
 
     averages = {
         'dimension': enti_partecipati_cronologia.aggregate(Avg('fatturato'))['fatturato__avg'] or 0,
-        'quota': enti_partecipati_cronologia.aggregate(Avg('quota_pubblica'))['quota_pubblica__avg'] or 0,
-        'performance': enti_partecipati_cronologia.aggregate(Avg('indice_performance'))['indice_performance__avg'] or 0,
+        'quota': div100(enti_partecipati_cronologia.aggregate(Avg('quota_pubblica'))['quota_pubblica__avg'] or 0),
+        'performance': div100(enti_partecipati_cronologia.aggregate(Avg('indice_performance'))['indice_performance__avg'] or 0),
     }
 
     data = {
         'item': [
             {
                 'id': 'entity',
-                'data': [{
-                            'id': x.ente_partecipato_id,
-                            'r': x.fatturato,
-                            'x': x.indice_performance / 100 if x.indice_performance else x.indice_performance,
-                            'y': x.quota_pubblica / 100 if x.quota_pubblica else x.quota_pubblica,
-                            'name': x.ente_partecipato.ente.denominazione,
-                            'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
-                            'fiscal_code': x.ente_partecipato.ente.codice_fiscale,
-                            'sector': '|'.join(set([s.settore.descrizione for s in x.regioni_settori.all()])),
-                            'type': x.categoria.descrizione,
-                         } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]],
+                'data': [
+                    {
+                        'id': x.ente_partecipato_id,
+                        'r': x.fatturato,
+                        'x': div100(x.indice_performance),
+                        'y': div100(x.quota_pubblica),
+                        'name': x.ente_partecipato.ente.denominazione,
+                        'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
+                        'fiscal_code': x.ente_partecipato.ente.codice_fiscale,
+                        'sector': '|'.join([s.descrizione for s in x.settori.distinct()]),
+                        'type': x.categoria.descrizione,
+                        'quota': div100(x.quota_pubblica),
+                    } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]
+                ],
             },
             {
                 'id': 'area',
                 'data': {
-                    'features': [{'id': x.cod_reg, 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_settori__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_settori__ente_partecipato_cronologia', distinct=True)).order_by('-num_enti')],
+                    'features': [{'id': x.cod_reg, 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
                 },
             },
             {
@@ -144,15 +162,23 @@ def overview(request):
             },
             {
                 'id': 'sector',
-                'data': [{'id': x.pk, 'label': x.descrizione, 'value': x.num_enti} for x in EntePartecipatoSettore.objects.filter(enti_regioni__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_regioni__ente_partecipato_cronologia', distinct=True)).order_by('-num_enti')],
+                'data': [{'id': x.pk, 'label': x.descrizione, 'value': x.num_enti} for x in EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
             },
             {
                 'id': 'ranking',
-                'data': [{'id': x.ente_partecipato.ente.id, 'label': x.ente_partecipato.ente.denominazione, 'description': '', 'dimension': x.fatturato, 'quota': x.quota_pubblica / 100 if x.quota_pubblica else x.quota_pubblica, 'performance': x.indice_performance / 100 if x.indice_performance else x.indice_performance} for x in EntePartecipatoCronologia.objects.filter(pk__in=ranking_ids).select_related('ente_partecipato__ente')],
+                'data': [
+                    {
+                        'id': x.ente_partecipato.ente.id,
+                        'label': x.ente_partecipato.ente.denominazione,
+                        'dimension': x.fatturato,
+                        'quota': div100(x.quota_pubblica),
+                        'performance': div100(x.indice_performance),
+                    } for x in EntePartecipatoCronologia.objects.filter(pk__in=ranking_ids).select_related('ente_partecipato__ente')
+                ],
             },
             {
                 'id': 'shareholder',
-                'data': [{'id': x.ente.id, 'label': x.ente.denominazione, 'value': x.num_enti} for x in EnteAzionista.objects.filter(quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')[:5]],
+                'data': [{'id': x.ente.id, 'label': x.ente.denominazione, 'value': x.num_enti} for x in EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')[:5]],
             },
             {
                 'id': 'average',
@@ -169,14 +195,14 @@ def overview(request):
                         },
                         {
                             'label': 'Quota pubblica',
-                            'value': averages['quota'] / 100,
-                            'progress': averages['quota'] / 100,
+                            'value': averages['quota'],
+                            'progress': averages['quota'],
                             'format': '0.0%',
                         },
                         {
                             'label': 'Indicatore di performance',
-                            'value': averages['performance'] / 100,
-                            'progress': averages['performance'] / 100,
+                            'value': averages['performance'],
+                            'progress': averages['performance'],
                             'format': '0.0%',
                         },
                     ],
@@ -201,83 +227,90 @@ def overview(request):
 
 
 def detail(request):
-    if request.GET.get('entityId'):
-        entityId = request.GET['entityId']
+    data = {}
 
-    entityId = 7
-    ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia, ente_partecipato_id=entityId)
-    data = {
-        'item': [
-            {
-                'id': 'detail',
-                'data': {
-                    'ente': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
-                    'categoriaEnte': ente_partecipato_cronologia.categoria.descrizione,
-                    'sottocategoriaEnte': '',
-                    'sottotipoEnte': ente_partecipato_cronologia.sottotipo.descrizione,
-                    'fax': ente_partecipato_cronologia.ente_partecipato.fax,
-                    'mail': ente_partecipato_cronologia.ente_partecipato.email,
-                    'tipoContabilita': '',
-                    'annotazioni': '',
-                    'id': ente_partecipato_cronologia.ente_partecipato.ente.codice_fiscale,
-                    'prevalenzaCapSociale': '',
-                    'annoCessazione': ente_partecipato_cronologia.ente_partecipato.anno_fine_attivita,
-                    'fonte': 'NR',
-                    'periodoAttivita': '{} / {}'.format(ente_partecipato_cronologia.ente_partecipato.anno_inizio_attivita, ente_partecipato_cronologia.ente_partecipato.anno_fine_attivita),
-                    'annoInizioRilevamento': ente_partecipato_cronologia.ente_partecipato.anno_inizio_attivita,
-                    'indirizzo': ente_partecipato_cronologia.ente_partecipato.indirizzo,
-                    'cap': ente_partecipato_cronologia.ente_partecipato.cap,
-                    'regione': ente_partecipato_cronologia.ente_partecipato.ente.regione.denominazione,
-                    'provincia': ente_partecipato_cronologia.ente_partecipato.comune.provincia.denominazione,
-                    'comune': ente_partecipato_cronologia.ente_partecipato.comune.denominazione,
-                    'telefono': ente_partecipato_cronologia.ente_partecipato.telefono,
-                },
-            },
-            {
-                'id': 'network',
-                'data': {
-                    'nodes': [
-                        {
-                            'id': '',
-                            'label': '',
-                            'codiceFiscale': '',
-                            'regione': '',
-                            'value': '',
-                            'type': '',
-                        },
-                    ],
-                    'edges': [
-                        {
-                            'target': '',
-                            'source': '',
-                            'type': '',
-                            'value': '',
-                        },
-                    ],
-                },
-            },
-            {
-                'id': 'performance',
-                'data': [
-                    {
-                        'x': '',
-                        'y': '',
-                        'category': '',
+    entityId = request.GET.get('entityId')
+    if entityId:
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia, anno_riferimento='2013', ente_partecipato_id=entityId)
+
+        settori = ente_partecipato_cronologia.settori.distinct()
+
+        fatturato_cluster_conditions = {}
+        if 'from' in ente_partecipato_cronologia.fatturato_cluster:
+            fatturato_cluster_conditions['fatturato__gt'] = ente_partecipato_cronologia.fatturato_cluster['from']
+        if 'to' in ente_partecipato_cronologia.fatturato_cluster:
+            fatturato_cluster_conditions['fatturato__lte'] = ente_partecipato_cronologia.fatturato_cluster['to']
+
+        data = {
+            'item': [
+                {
+                    'id': 'detail',
+                    'data': {
+                        'id': ente_partecipato_cronologia.ente_partecipato.ente.id,
+                        'ente': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
+                        'codice_fiscale': ente_partecipato_cronologia.ente_partecipato.ente.codice_fiscale,
+                        'indirizzo': ente_partecipato_cronologia.ente_partecipato.indirizzo,
+                        'cap': ente_partecipato_cronologia.ente_partecipato.cap,
+                        'comune': ente_partecipato_cronologia.ente_partecipato.comune.nome,
+                        'provincia': ente_partecipato_cronologia.ente_partecipato.comune.provincia.nome,
+                        'regione': ente_partecipato_cronologia.ente_partecipato.ente.regione.nome,
+                        'telefono': ente_partecipato_cronologia.ente_partecipato.telefono,
+                        'fax': ente_partecipato_cronologia.ente_partecipato.fax,
+                        'mail': ente_partecipato_cronologia.ente_partecipato.email,
+                        'anno_cessazione': ente_partecipato_cronologia.ente_partecipato.anno_fine_attivita,
+                        'anno_rilevazione': ente_partecipato_cronologia.ente_partecipato.ente.anno_rilevazione,
+                        'tipologia': {'id': ente_partecipato_cronologia.categoria.pk, 'name': ente_partecipato_cronologia.categoria.descrizione},
+                        'sottotipo': ente_partecipato_cronologia.sottotipo.descrizione,
+                        'settori_attivita': [{'id': x.pk, 'name': x.descrizione} for x in settori],
+                        'regioni_attivita': [{'id': x.cod_reg, 'name': x.nome} for x in ente_partecipato_cronologia.regioni.distinct()],
+                        'dimensione': ente_partecipato_cronologia.fatturato,
+                        'quota_pubblica': div100(ente_partecipato_cronologia.quota_pubblica),
+                        'quotato': ente_partecipato_cronologia.ente_partecipato.ente.quotato,
+                        'indicatore1': div100(ente_partecipato_cronologia.indice2),
+                        'indicatore2': div100(ente_partecipato_cronologia.indice3),
+                        'indicatore3': div100(ente_partecipato_cronologia.indice4),
+                        'indicatore4': div100(ente_partecipato_cronologia.indice5),
                     },
-                ],
-            },
-            {
-                'id': 'ranking',
-                'data': [
-                    {
-                        'id': '',
-                        'label': '',
-                        'value': '',
+                },
+                {
+                    'id': 'network',
+                    'data': {
+                        'nodes': [
+                            {
+                                'id': x.ente_azionista.ente.id,
+                                'label': x.ente_azionista.ente.denominazione,
+                                'codice_fiscale': x.ente_azionista.ente.codice_fiscale,
+                                'regione': x.ente_azionista.ente.regione.nome if x.ente_azionista.ente.regione else None,
+                                'quotato': x.ente_azionista.ente.quotato,
+                                'tipo_controllo': x.ente_azionista.get_tipo_controllo_display(),
+                                'value': div100(x.quota),
+                            } for x in ente_partecipato_cronologia.quote.all()
+                        ],
+                        'edges': [
+                            {
+                                'source': ente_partecipato_cronologia.ente_partecipato.ente.id,
+                                'target': x.ente_azionista.ente.id,
+                                'value': div100(x.quota),
+                            } for x in ente_partecipato_cronologia.quote.all()
+                        ],
                     },
-                ],
-            },
-        ],
-    }
+                },
+                {
+                    'id': 'ranking',
+                    'data': [
+                        {
+                            'ranking{}'.format(i): [
+                                {
+                                    'id': x.ente_partecipato.ente.id,
+                                    'label': x.ente_partecipato.ente.denominazione,
+                                    'value': div100(getattr(x, 'indice{}'.format(i + 1))),
+                                } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.pk for s in settori], **fatturato_cluster_conditions).order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
+                            ]
+                        } for i in range(1, 5)
+                    ],
+                }
+            ],
+        }
 
     return MyJsonResponse(data)
 
