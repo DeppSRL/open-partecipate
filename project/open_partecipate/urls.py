@@ -22,6 +22,7 @@ urls = (
     url(r'^$', index),
     url(r'^overview/', overview),
     url(r'^detail/', detail),
+    url(r'^info/', info),
     url(r'^entity-search/', entity_search),
     url(r'^shareholder-search/', shareholder_search),
 

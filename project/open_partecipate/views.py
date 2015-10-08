@@ -107,6 +107,7 @@ def index(request):
     data = OrderedDict([
         ('overview', request.build_absolute_uri('overview/')),
         ('detail', request.build_absolute_uri('detail/')),
+        ('info', request.build_absolute_uri('info/')),
         ('entity-search', request.build_absolute_uri('entity-search/')),
         ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
     ])
@@ -118,7 +119,7 @@ def overview(request):
     entity_num_items = 200
     ranking_num_items = 50
 
-    related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria', 'settori']
+    related = ['ente_partecipato__ente']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request)).distinct().select_related(*related).prefetch_related(*related)
 
     counter = enti_partecipati_cronologia.count()
@@ -142,16 +143,10 @@ def overview(request):
                 'data': [
                     {
                         'id': x.ente_partecipato_id,
+                        'label': x.ente_partecipato.ente.denominazione,
                         'r': x.fatturato,
                         'x': div100(x.indice_performance),
                         'y': div100(x.quota_pubblica),
-                        'name': x.ente_partecipato.ente.denominazione,
-                        'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
-                        'fiscal_code': x.ente_partecipato.ente.codice_fiscale,
-                        # 'sector': '|'.join([s.descrizione for s in x.settori.distinct()]),
-                        'sector': '|'.join(sorted(set([s.descrizione for s in x.settori.all()]))),
-                        'type': x.categoria.descrizione,
-                        'quota': div100(x.quota_pubblica),
                     } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]
                 ],
             },
@@ -238,7 +233,7 @@ def detail(request):
     entityId = request.GET.get('entityId')
     if entityId:
         related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'regioni', 'settori', 'quote__ente_azionista__ente__regione']
-        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), anno_riferimento='2013', ente_partecipato_id=entityId)
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entityId, anno_riferimento='2013')
 
         settori = ente_partecipato_cronologia.settori.distinct()
 
@@ -322,6 +317,30 @@ def detail(request):
     return MyJsonResponse(data)
 
 
+def info(request):
+    data = {}
+
+    entityId = request.GET.get('entityId')
+    if entityId:
+        related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria']
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entityId, anno_riferimento='2013')
+
+        data = {
+            'data': {
+                'name': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
+                'address': u'{} - {}'.format(ente_partecipato_cronologia.ente_partecipato.indirizzo, ente_partecipato_cronologia.ente_partecipato.comune.nome if ente_partecipato_cronologia.ente_partecipato.comune else '').strip(' -'),
+                'fiscal_code': ente_partecipato_cronologia.ente_partecipato.ente.codice_fiscale,
+                'sector': '|'.join([s.descrizione for s in ente_partecipato_cronologia.settori.distinct()]),
+                'type': ente_partecipato_cronologia.categoria.descrizione,
+                'dimension': ente_partecipato_cronologia.fatturato,
+                'quota': div100(ente_partecipato_cronologia.quota_pubblica),
+                'performance': div100(ente_partecipato_cronologia.indice_performance),
+            }
+        }
+
+    return MyJsonResponse(data)
+
+
 def entity_search(request):
     data = {}
 
@@ -340,7 +359,7 @@ def shareholder_search(request):
     input = request.GET.get('input')
     if input:
         enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request))
-        data['data'] = [{'id': x.id, 'label': x.denominazione} for x in Ente.objects.filter(denominazione__istartswith=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia)]
+        data['data'] = [{'id': x.id, 'label': x.denominazione} for x in Ente.objects.filter(denominazione__istartswith=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
     else:
         data['data'] = []
 
