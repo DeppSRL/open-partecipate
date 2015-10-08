@@ -22,8 +22,8 @@ urls = (
     url(r'^$', index),
     url(r'^overview/', overview),
     url(r'^detail/', detail),
-    url(r'^entity-search/', autocomplete, {'target': 'entity'}),
-    url(r'^shareholder-search/', autocomplete, {'target': 'shareholder'}),
+    url(r'^entity-search/', entity_search),
+    url(r'^shareholder-search/', shareholder_search),
 
     # Examples:
     # url(r'^$', 'open_partecipate.views.home', name='home'),

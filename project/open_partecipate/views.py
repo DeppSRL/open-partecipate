@@ -29,25 +29,11 @@ class MyJsonResponse(JsonResponse):
     def __init__(self, *args, **kwargs):
         super(MyJsonResponse, self).__init__(encoder=MyJSONEncoder, *args, **kwargs)
         self['Access-Control-Allow-Origin'] = '*'
-        self['Access-Control-Allow-Methods'] = 'POST,PUT,GET'
+        self['Access-Control-Allow-Methods'] = 'GET'
         self['Access-Control-Allow-Headers'] = 'content-type'
 
 
-def index(request):
-    data = OrderedDict([
-        ('overview', request.build_absolute_uri('overview/')),
-        ('detail', request.build_absolute_uri('detail/')),
-        ('entity-search', request.build_absolute_uri('entity-search/')),
-        ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
-    ])
-
-    return MyJsonResponse(data)
-
-
-def overview(request):
-    entity_num_items = 200
-    ranking_num_items = 50
-
+def get_conditions(request):
     dimension_range = {
         'S': {'to': 100},
         'M': {'from': 100, 'to': 1000},
@@ -114,8 +100,26 @@ def overview(request):
     if shareholderId:
         conditions['quote__ente_azionista__in'] = shareholderId.split(',')
 
+    return conditions
+
+
+def index(request):
+    data = OrderedDict([
+        ('overview', request.build_absolute_uri('overview/')),
+        ('detail', request.build_absolute_uri('detail/')),
+        ('entity-search', request.build_absolute_uri('entity-search/')),
+        ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
+    ])
+
+    return MyJsonResponse(data)
+
+
+def overview(request):
+    entity_num_items = 200
+    ranking_num_items = 50
+
     related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria', 'settori']
-    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**conditions).distinct().select_related(*related).prefetch_related(*related)
+    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request)).distinct().select_related(*related).prefetch_related(*related)
 
     counter = enti_partecipati_cronologia.count()
 
@@ -318,20 +322,27 @@ def detail(request):
     return MyJsonResponse(data)
 
 
-def autocomplete(request, target):
-    data = {
-        'data': [],
-    }
+def entity_search(request):
+    data = {}
 
     input = request.GET.get('input')
     if input:
-        conditions = {}
-        conditions['denominazione__istartswith'] = input
-        if target == 'entity':
-            conditions['entepartecipato__isnull'] = False
-        elif target == 'shareholder':
-            conditions['enteazionista__isnull'] = False
-        data['data'] = [{'id': x.id, 'label': x.denominazione} for x in Ente.objects.filter(**conditions)]
+        data['data'] = [{'id': x.id, 'label': x.denominazione} for x in Ente.objects.filter(denominazione__istartswith=input, entepartecipato__isnull=False)]
+    else:
+        data['data'] = []
+
+    return MyJsonResponse(data)
+
+
+def shareholder_search(request):
+    data = {}
+
+    input = request.GET.get('input')
+    if input:
+        enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request))
+        data['data'] = [{'id': x.id, 'label': x.denominazione} for x in Ente.objects.filter(denominazione__istartswith=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia)]
+    else:
+        data['data'] = []
 
     return MyJsonResponse(data)
 
