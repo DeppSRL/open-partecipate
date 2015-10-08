@@ -45,7 +45,7 @@ def index(request):
 
 
 def overview(request):
-    entity_num_items = 50
+    entity_num_items = 200
     ranking_num_items = 50
 
     dimension_range = {
@@ -124,10 +124,11 @@ def overview(request):
         for order_by_direction in ['', '-']:
             ranking_ids += enti_partecipati_cronologia.exclude(**{'{}__isnull'.format(order_by_field): True}).order_by('{}{}'.format(order_by_direction, order_by_field)).values_list('id', flat=True)[:ranking_num_items]
 
+    avgs = enti_partecipati_cronologia.aggregate(Avg('fatturato'), Avg('quota_pubblica'), Avg('indice_performance'))
     averages = {
-        'dimension': enti_partecipati_cronologia.aggregate(Avg('fatturato'))['fatturato__avg'] or 0,
-        'quota': div100(enti_partecipati_cronologia.aggregate(Avg('quota_pubblica'))['quota_pubblica__avg'] or 0),
-        'performance': div100(enti_partecipati_cronologia.aggregate(Avg('indice_performance'))['indice_performance__avg'] or 0),
+        'dimension': avgs['fatturato__avg'] or 0,
+        'quota': div100(avgs['quota_pubblica__avg'] or 0),
+        'performance': div100(avgs['indice_performance__avg'] or 0),
     }
 
     data = {
@@ -143,7 +144,8 @@ def overview(request):
                         'name': x.ente_partecipato.ente.denominazione,
                         'address': u'{} - {}'.format(x.ente_partecipato.indirizzo, x.ente_partecipato.comune.nome if x.ente_partecipato.comune else '').strip(' -'),
                         'fiscal_code': x.ente_partecipato.ente.codice_fiscale,
-                        'sector': '|'.join([s.descrizione for s in x.settori.distinct()]),
+                        # 'sector': '|'.join([s.descrizione for s in x.settori.distinct()]),
+                        'sector': '|'.join(sorted(set([s.descrizione for s in x.settori.all()]))),
                         'type': x.categoria.descrizione,
                         'quota': div100(x.quota_pubblica),
                     } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]
@@ -231,7 +233,8 @@ def detail(request):
 
     entityId = request.GET.get('entityId')
     if entityId:
-        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia, anno_riferimento='2013', ente_partecipato_id=entityId)
+        related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'regioni', 'settori', 'quote__ente_azionista__ente__regione']
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), anno_riferimento='2013', ente_partecipato_id=entityId)
 
         settori = ente_partecipato_cronologia.settori.distinct()
 
