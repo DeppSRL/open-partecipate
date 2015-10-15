@@ -88,6 +88,9 @@ USE_THOUSAND_SEPARATOR = True
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
 USE_TZ = True
+
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#use-etags
+USE_ETAGS = True
 ########## END GENERAL CONFIGURATION
 
 
@@ -171,6 +174,7 @@ TEMPLATE_DIRS = (
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
 MIDDLEWARE_CLASSES = (
+    'django.middleware.http.ConditionalGetMiddleware',
     # Default Django middleware.
     'django.middleware.common.CommonMiddleware',
     # 'django.contrib.sessions.middleware.SessionMiddleware',
