@@ -116,8 +116,8 @@ def index(request):
 
 
 def overview(request):
-    entity_num_items = 200
-    ranking_num_items = 50
+    entity_num_items = 10000
+    ranking_num_items = 100
 
     related = ['ente_partecipato__ente']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request)).distinct().select_related(*related).prefetch_related(*related)
@@ -145,8 +145,8 @@ def overview(request):
                         'id': x.ente_partecipato_id,
                         'label': x.ente_partecipato.ente.denominazione,
                         'r': x.fatturato,
-                        'x': div100(x.indice_performance),
-                        'y': div100(x.quota_pubblica),
+                        'x': div100(x.indice5),
+                        'y': div100(x.indice2),
                     } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]
                 ],
             },
