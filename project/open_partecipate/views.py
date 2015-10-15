@@ -154,7 +154,7 @@ def overview(request):
             {
                 'id': 'area',
                 'data': {
-                    'features': [{'id': str(x.cod_reg), 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
+                    'features': [{'id': x.cod_reg, 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
                 },
             },
             {
@@ -218,8 +218,8 @@ def overview(request):
                         'sector': 'tutti i settori',
                         'region': "tutta l'Italia",
                     },
-                    'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in EntePartecipatoSettore.objects.all()],
-                    'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in Territorio.objects.regioni()],
+                    'sector': [{'id': x.pk, 'label': x.descrizione} for x in EntePartecipatoSettore.objects.all()],
+                    'region': [{'id': x.cod_reg, 'label': x.nome} for x in Territorio.objects.regioni()],
                 },
             },
         ],
@@ -265,7 +265,7 @@ def detail(request):
                         'tipologia': {'id': str(ente_partecipato_cronologia.categoria.pk), 'name': ente_partecipato_cronologia.categoria.descrizione},
                         'sottotipo': ente_partecipato_cronologia.sottotipo.descrizione,
                         'settori_attivita': [{'id': x.pk, 'name': x.descrizione} for x in settori],
-                        'regioni_attivita': [{'id': str(x.cod_reg), 'name': x.nome} for x in ente_partecipato_cronologia.regioni.distinct()],
+                        'regioni_attivita': [{'id': x.cod_reg, 'name': x.nome} for x in ente_partecipato_cronologia.regioni.distinct()],
                         'dimensione': ente_partecipato_cronologia.fatturato,
                         'quota_pubblica': div100(ente_partecipato_cronologia.quota_pubblica),
                         'quotato': ente_partecipato_cronologia.ente_partecipato.ente.quotato,
