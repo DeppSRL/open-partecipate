@@ -40,12 +40,12 @@ def get_conditions(request):
         'M': {'from': 100, 'to': 1000},
         'L': {'from': 1000},
     }
-    quota_range = {
+    indice2_range = {
         'S': {'to': 25},
         'M': {'from': 25, 'to': 75},
         'L': {'from': 75},
     }
-    performance_range = {
+    indice5_range = {
         'S': {'to': 25},
         'M': {'from': 25, 'to': 75},
         'L': {'from': 75},
@@ -73,21 +73,21 @@ def get_conditions(request):
         if 'to' in range:
             conditions['fatturato__lte'] = range['to']
 
-    quota = params.get('quota')
-    if quota in quota_range:
-        range = quota_range[quota]
+    indice2 = params.get('indice2')
+    if indice2 in indice2_range:
+        range = indice2_range[indice2]
         if 'from' in range:
-            conditions['quota_pubblica__gt'] = range['from']
+            conditions['indice2__gt'] = range['from']
         if 'to' in range:
-            conditions['quota_pubblica__lte'] = range['to']
+            conditions['indice2__lte'] = range['to']
 
-    performance = params.get('performance')
-    if performance in performance_range:
-        range = performance_range[performance]
+    indice5 = params.get('indice5')
+    if indice5 in indice5_range:
+        range = indice5_range[indice5]
         if 'from' in range:
-            conditions['indice_performance__gt'] = range['from']
+            conditions['indice5__gt'] = range['from']
         if 'to' in range:
-            conditions['indice_performance__lte'] = range['to']
+            conditions['indice5__lte'] = range['to']
 
     type = params.get('type')
     if type:
@@ -126,15 +126,15 @@ def overview(request):
     counter = enti_partecipati_cronologia.count()
 
     ranking_ids = []
-    for order_by_field in ['fatturato', 'quota_pubblica', 'indice_performance']:
+    for order_by_field in ['fatturato', 'indice2', 'indice5']:
         for order_by_direction in ['', '-']:
             ranking_ids += enti_partecipati_cronologia.exclude(**{'{}__isnull'.format(order_by_field): True}).order_by('{}{}'.format(order_by_direction, order_by_field)).values_list('id', flat=True)[:ranking_num_items]
 
-    avgs = enti_partecipati_cronologia.aggregate(Avg('fatturato'), Avg('quota_pubblica'), Avg('indice_performance'))
+    avgs = enti_partecipati_cronologia.aggregate(Avg('fatturato'), Avg('indice2'), Avg('indice5'))
     averages = {
         'dimension': avgs['fatturato__avg'] or 0,
-        'quota': div100(avgs['quota_pubblica__avg'] or 0),
-        'performance': div100(avgs['indice_performance__avg'] or 0),
+        'indice2': div100(avgs['indice2__avg'] or 0),
+        'indice5': div100(avgs['indice5__avg'] or 0),
     }
 
     data = {
@@ -154,7 +154,7 @@ def overview(request):
             {
                 'id': 'area',
                 'data': {
-                    'features': [{'id': x.cod_reg, 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
+                    'features': [{'id': str(x.cod_reg), 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
                 },
             },
             {
@@ -173,8 +173,8 @@ def overview(request):
                         'id': str(x.ente_partecipato.ente.id),
                         'label': x.ente_partecipato.ente.denominazione,
                         'dimension': x.fatturato,
-                        'quota': div100(x.quota_pubblica),
-                        'performance': div100(x.indice_performance),
+                        'indice2': div100(x.indice2),
+                        'indice5': div100(x.indice5),
                     } for x in EntePartecipatoCronologia.objects.filter(pk__in=ranking_ids).select_related('ente_partecipato__ente')
                 ],
             },
@@ -196,15 +196,15 @@ def overview(request):
                             'format': '0.[0]a',
                         },
                         {
-                            'label': 'Quota pubblica',
-                            'value': averages['quota'],
-                            'progress': averages['quota'],
+                            'label': 'Risultato finanziario',
+                            'value': averages['indice2'],
+                            'progress': averages['indice2'],
                             'format': '0.0%',
                         },
                         {
-                            'label': 'Indicatore di performance',
-                            'value': averages['performance'],
-                            'progress': averages['performance'],
+                            'label': 'Spese personale',
+                            'value': averages['indice5'],
+                            'progress': averages['indice5'],
                             'format': '0.0%',
                         },
                     ],
@@ -282,14 +282,14 @@ def detail(request):
                             {
                                 'id': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                                 'label': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
-                                'value': 100,
+                                'radius': 1.0,
                                 'type': 'entity',
                             }
                         ] + [
                             {
                                 'id': str(x.ente_azionista.ente.id),
                                 'label': x.ente_azionista.ente.denominazione,
-                                'value': div100(x.quota),
+                                'radius': 0.5,
                                 'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo],
                             } for x in ente_partecipato_cronologia.quote.all()
                         ],
@@ -298,7 +298,7 @@ def detail(request):
                                 'id': str(x.id),
                                 'source': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                                 'target': str(x.ente_azionista.ente.id),
-                                'value': div100(x.quota),
+                                'width': div100(x.quota),
                             } for x in ente_partecipato_cronologia.quote.all()
                         ],
                     },
@@ -339,8 +339,8 @@ def info(request):
                 'sector': '|'.join([s.descrizione for s in ente_partecipato_cronologia.settori.distinct()]),
                 'type': ente_partecipato_cronologia.categoria.descrizione,
                 'dimension': ente_partecipato_cronologia.fatturato,
-                'quota': div100(ente_partecipato_cronologia.quota_pubblica),
-                'performance': div100(ente_partecipato_cronologia.indice_performance),
+                'indice2': div100(ente_partecipato_cronologia.indice2),
+                'indice5': div100(ente_partecipato_cronologia.indice5),
             }
         }
 
@@ -352,7 +352,7 @@ def entity_search(request):
 
     input = request.GET.get('input')
     if input:
-        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__istartswith=input, entepartecipato__isnull=False)]
+        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, entepartecipato__isnull=False)]
     else:
         data['data'] = []
 
@@ -367,7 +367,7 @@ def shareholder_search(request):
     input = request.GET.get('input')
     if input:
         enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request))
-        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__istartswith=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
+        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
     else:
         data['data'] = []
 
