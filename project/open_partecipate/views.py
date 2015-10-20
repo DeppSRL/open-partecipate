@@ -114,6 +114,7 @@ def get_filtered_enti_partecipati_cronologia(request):
 def index(request):
     data = OrderedDict([
         ('overview', request.build_absolute_uri('overview/')),
+        ('entities', request.build_absolute_uri('entities/')),
         ('detail', request.build_absolute_uri('detail/')),
         ('info', request.build_absolute_uri('info/')),
         ('entity-search', request.build_absolute_uri('entity-search/')),
@@ -124,7 +125,6 @@ def index(request):
 
 
 def overview(request):
-    entity_num_items = 10000
     ranking_num_items = 100
 
     related = ['ente_partecipato__ente']
@@ -151,15 +151,7 @@ def overview(request):
         'item': [
             {
                 'id': 'entity',
-                'data': [
-                    {
-                        'id': str(x.ente_partecipato_id),
-                        'label': x.ente_partecipato.ente.denominazione,
-                        'r': x.fatturato,
-                        'x': div100(x.indice5),
-                        'y': div100(x.indice2),
-                    } for x in enti_partecipati_cronologia.order_by('-fatturato')[:entity_num_items]
-                ],
+                'data': [str(x.ente_partecipato_id) for x in enti_partecipati_cronologia.order_by('-fatturato')] if request.GET else [],
             },
             {
                 'id': 'area',
@@ -232,6 +224,25 @@ def overview(request):
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                 },
             },
+        ],
+    }
+
+    return MyJsonResponse(data)
+
+
+def entities(request):
+    related = ['ente_partecipato__ente']
+    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(anno_riferimento='2013').select_related(*related).prefetch_related(*related)
+
+    data = {
+        'data': [
+            {
+                'id': str(x.ente_partecipato_id),
+                'label': x.ente_partecipato.ente.denominazione,
+                'r': x.fatturato,
+                'x': div100(x.indice5),
+                'y': div100(x.indice2),
+            } for x in enti_partecipati_cronologia.order_by('-fatturato')
         ],
     }
 

@@ -21,6 +21,7 @@ urls = (
     # url(r'^api/', include(router.urls)),
     url(r'^$', index),
     url(r'^overview/', overview),
+    url(r'^entities/', entities),
     url(r'^detail/', detail),
     url(r'^info/', info),
     url(r'^entity-search/', entity_search),
