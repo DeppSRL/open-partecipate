@@ -36,19 +36,19 @@ class MyJsonResponse(JsonResponse):
 
 def get_conditions(request):
     dimension_range = {
-        'S': {'to': 100},
-        'M': {'from': 100, 'to': 1000},
-        'L': {'from': 1000},
+        'S': {'to': 10000000},
+        'M': {'from': 10000000, 'to': 40000000},
+        'L': {'from': 40000000},
     }
     indice2_range = {
-        'S': {'to': 25},
-        'M': {'from': 25, 'to': 75},
-        'L': {'from': 75},
+        'S': {'to': -40},
+        'M': {'from': -40, 'to': 40},
+        'L': {'from': 40},
     }
     indice5_range = {
-        'S': {'to': 25},
-        'M': {'from': 25, 'to': 75},
-        'L': {'from': 75},
+        'S': {'to': 30},
+        'M': {'from': 30, 'to': 60},
+        'L': {'from': 60},
     }
 
     params = request.GET
@@ -125,6 +125,9 @@ def overview(request):
 
     counter = enti_partecipati_cronologia.count()
 
+    regioni = Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia)
+    settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia)
+
     ranking_ids = []
     for order_by_field in ['fatturato', 'indice2', 'indice5']:
         for order_by_direction in ['', '-']:
@@ -154,7 +157,7 @@ def overview(request):
             {
                 'id': 'area',
                 'data': {
-                    'features': [{'id': str(x.cod_reg), 'category': x.num_enti} for x in Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
+                    'features': [{'id': str(x.cod_reg), 'category': x.num_enti} for x in regioni.annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
                 },
             },
             {
@@ -164,7 +167,7 @@ def overview(request):
             },
             {
                 'id': 'sector',
-                'data': [{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
+                'data': [{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in settori.annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
             },
             {
                 'id': 'ranking',
@@ -218,8 +221,8 @@ def overview(request):
                         'sector': 'tutti i settori',
                         'region': "tutta l'Italia",
                     },
-                    'sector': [{'id': x.pk, 'label': x.descrizione} for x in EntePartecipatoSettore.objects.all()],
-                    'region': [{'id': x.cod_reg, 'label': x.nome} for x in Territorio.objects.regioni()],
+                    'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori],
+                    'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                 },
             },
         ],
