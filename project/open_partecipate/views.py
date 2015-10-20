@@ -125,8 +125,8 @@ def overview(request):
 
     counter = enti_partecipati_cronologia.count()
 
-    regioni = Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia)
-    settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia)
+    regioni = Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
+    settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
 
     ranking_ids = []
     for order_by_field in ['fatturato', 'indice2', 'indice5']:
