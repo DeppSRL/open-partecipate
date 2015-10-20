@@ -191,7 +191,7 @@ class Command(BaseCommand):
                 tipologia=tipologia_desc2cod[row['tipologia']],
                 categoria=categoria_desc2obj[row['categoria']],
                 sottotipo=sottotipo_cod2obj[row['sottotipo'].split(' - ', 1)[0]],
-                fatturato=row['fatturato'],
+                fatturato=row['fatturato'] * 1000,
                 indice_performance=row['indice_performance'],
                 indice2=row['indice2'],
                 indice3=row['indice3'],
