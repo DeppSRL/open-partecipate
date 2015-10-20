@@ -34,7 +34,7 @@ class MyJsonResponse(JsonResponse):
         self['Cache-control'] = 'public'
 
 
-def get_conditions(request):
+def get_filtered_enti_partecipati_cronologia(request):
     dimension_range = {
         'S': {'to': 10000000},
         'M': {'from': 10000000, 'to': 40000000},
@@ -50,6 +50,8 @@ def get_conditions(request):
         'M': {'from': 30, 'to': 60},
         'L': {'from': 60},
     }
+
+    enti_partecipati_cronologia = EntePartecipatoCronologia.objects
 
     params = request.GET
 
@@ -89,19 +91,24 @@ def get_conditions(request):
         if 'to' in range:
             conditions['indice5__lte'] = range['to']
 
+    enti_partecipati_cronologia = enti_partecipati_cronologia.filter(**conditions)
+
     type = params.get('type')
     if type:
-        conditions['categoria_id__in'] = type.split(',')
+        for t in type.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(categoria_id=t)
 
     sector = params.get('sector')
     if sector:
-        conditions['settori__in'] = sector.split(',')
+        for s in sector.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(settori=s)
 
     shareholderId = params.get('shareholderId')
     if shareholderId:
-        conditions['quote__ente_azionista__in'] = shareholderId.split(',')
+        for s in shareholderId.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(quote__ente_azionista=s)
 
-    return conditions
+    return enti_partecipati_cronologia
 
 
 def index(request):
@@ -121,7 +128,7 @@ def overview(request):
     ranking_num_items = 100
 
     related = ['ente_partecipato__ente']
-    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request)).distinct().select_related(*related).prefetch_related(*related)
+    enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related(*related).prefetch_related(*related)
 
     counter = enti_partecipati_cronologia.count()
 
@@ -369,7 +376,7 @@ def shareholder_search(request):
 
     input = request.GET.get('input')
     if input:
-        enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(**get_conditions(request))
+        enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request)
         data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
     else:
         data['data'] = []
