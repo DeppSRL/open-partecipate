@@ -151,7 +151,7 @@ def overview(request):
         'item': [
             {
                 'id': 'entity',
-                'data': [str(x.ente_partecipato_id) for x in enti_partecipati_cronologia.order_by('-fatturato')] if request.GET else [],
+                'data': [str(x.ente_partecipato_id) for x in enti_partecipati_cronologia.order_by('-fatturato')],
             },
             {
                 'id': 'area',
