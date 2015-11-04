@@ -135,6 +135,11 @@ def overview(request):
     regioni = Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
     settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
 
+    shareholders = EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')
+    shareholder_ids = request.GET.get('shareholderId')
+    if shareholder_ids:
+        shareholders = sorted(shareholders, key=lambda x: (str(x.ente.id) in shareholder_ids.split(',')) * 100000 + x.num_enti, reverse=True)
+
     ranking_ids = []
     for order_by_field in ['fatturato', 'indice2', 'indice5']:
         for order_by_direction in ['', '-']:
@@ -166,7 +171,7 @@ def overview(request):
             },
             {
                 'id': 'sector',
-                'data': [{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in settori.annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')],
+                'data': sorted([{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in settori.annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')], key=lambda x: 0 if x['id'] == '00029' else x['value'], reverse=True),
             },
             {
                 'id': 'ranking',
@@ -182,7 +187,7 @@ def overview(request):
             },
             {
                 'id': 'shareholder',
-                'data': [{'id': str(x.ente.id), 'label': x.ente.denominazione, 'value': x.num_enti} for x in EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')[:5]],
+                'data': [{'id': str(x.ente.id), 'label': x.ente.denominazione, 'value': x.num_enti} for x in shareholders[:5]],
             },
             {
                 'id': 'average',
@@ -254,10 +259,11 @@ def detail(request):
 
     entityId = request.GET.get('entityId')
     if entityId:
-        related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'regioni', 'settori', 'quote__ente_azionista__ente__regione']
+        related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'quote__ente_azionista__ente__regione']
         ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entityId, anno_riferimento='2013')
 
-        settori = ente_partecipato_cronologia.settori.distinct()
+        settori = ente_partecipato_cronologia.regioni_settori.order_by('-settore_quota').distinct('settore', 'settore_quota').select_related('settore')
+        regioni = ente_partecipato_cronologia.regioni_settori.order_by('-regione_quota').distinct('regione', 'regione_quota').select_related('regione')
 
         fatturato_cluster_conditions = {}
         if 'from' in ente_partecipato_cronologia.fatturato_cluster:
@@ -285,10 +291,11 @@ def detail(request):
                         'anno_rilevazione': ente_partecipato_cronologia.ente_partecipato.ente.anno_rilevazione,
                         'tipologia': {'id': str(ente_partecipato_cronologia.categoria.pk), 'name': ente_partecipato_cronologia.categoria.descrizione},
                         'sottotipo': ente_partecipato_cronologia.sottotipo.descrizione,
-                        'settori_attivita': [{'id': x.pk, 'name': x.descrizione} for x in settori],
-                        'regioni_attivita': [{'id': x.cod_reg, 'name': x.nome} for x in ente_partecipato_cronologia.regioni.distinct()],
+                        'settori_attivita': [{'id': x.settore.pk, 'name': x.settore.descrizione, 'quota': div100(x.settore_quota)} for x in settori],
+                        'regioni_attivita': [{'id': x.regione.cod_reg, 'name': x.regione.nome, 'quota': div100(x.regione_quota)} for x in regioni],
                         'dimensione': ente_partecipato_cronologia.fatturato,
                         'quota_pubblica': div100(ente_partecipato_cronologia.quota_pubblica),
+                        'quote_stimate': ente_partecipato_cronologia.quote_stimate,
                         'quotato': ente_partecipato_cronologia.ente_partecipato.ente.quotato,
                         'indicatore1': div100(ente_partecipato_cronologia.indice2),
                         'indicatore2': div100(ente_partecipato_cronologia.indice3),
@@ -303,6 +310,7 @@ def detail(request):
                             {
                                 'id': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                                 'label': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
+                                'ipa_url': '',
                                 'radius': 1.0,
                                 'type': 'entity',
                             }
@@ -310,6 +318,7 @@ def detail(request):
                             {
                                 'id': str(x.ente_azionista.ente.id),
                                 'label': x.ente_azionista.ente.denominazione,
+                                'ipa_url': x.ente_azionista.ipa_url,
                                 'radius': 0.5,
                                 'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo],
                             } for x in ente_partecipato_cronologia.quote.all()
@@ -333,7 +342,7 @@ def detail(request):
                                     'id': str(x.ente_partecipato.ente.id),
                                     'label': x.ente_partecipato.ente.denominazione,
                                     'value': div100(getattr(x, 'indice{}'.format(i + 1))),
-                                } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.pk for s in settori], **fatturato_cluster_conditions).order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
+                                } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
                             ]
                         } for i in range(1, 5)
                     ],
@@ -388,7 +397,7 @@ def shareholder_search(request):
     input = request.GET.get('input')
     if input:
         enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request)
-        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
+        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, enteazionista__tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
     else:
         data['data'] = []
 

@@ -56,6 +56,7 @@ class EnteAzionista(models.Model):
 
     ente = models.OneToOneField(Ente, primary_key=True)
     tipo_controllo = models.CharField(max_length=3, choices=TIPO_CONTROLLO, db_index=True)
+    ipa_url = models.URLField(max_length=150, null=True)
 
     def __unicode__(self):
         return u'{}'.format(self.ente)

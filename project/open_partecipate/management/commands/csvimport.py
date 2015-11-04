@@ -33,10 +33,6 @@ def convert_float(text):
         return None
 
 
-def convert_boolean(text):
-    return text.lower() == 'si'
-
-
 class Command(BaseCommand):
     """
     Data are imported from their CSV sources.
@@ -67,7 +63,7 @@ class Command(BaseCommand):
             keep_default_na=False,
             converters={
                 'codice': convert_int,
-                'soc_quotata': convert_boolean,
+                'soc_quotata': lambda x: x.lower() == 'si',
                 'regione': lambda x: x.upper(),
                 'fatturato': convert_float,
                 'indice_performance': convert_float,
@@ -80,7 +76,7 @@ class Command(BaseCommand):
                 'di_cui_pubblici': convert_float,
                 'di_cui_privati': convert_float,
                 'altri_soci_non_noti': convert_float,
-                'quote_stimate': convert_boolean,
+                'quote_stimate': lambda x: x.lower() == 'x',
                 'quota_regione': convert_float,
                 'quota_settore': convert_float,
                 'azionista_codice': convert_int,
@@ -256,6 +252,7 @@ class Command(BaseCommand):
             ente_azionista = EnteAzionista.objects.create(
                 ente=get_ente(row),
                 tipo_controllo=getattr(EnteAzionista.TIPO_CONTROLLO, row['tipo_controllo']),
+                ipa_url=row['url_scheda_IPA'],
             )
             self._log(u'{}/{} - Creato ente azionista: {}'.format(n, df_count, ente_azionista))
 
