@@ -310,6 +310,7 @@ def detail(request):
                             {
                                 'id': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                                 'label': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
+                                'part_perc': 0,
                                 'ipa_url': '',
                                 'radius': 1.0,
                                 'type': 'entity',
@@ -318,6 +319,7 @@ def detail(request):
                             {
                                 'id': str(x.ente_azionista.ente.id),
                                 'label': x.ente_azionista.ente.denominazione,
+                                'part_perc': div100(x.quota),
                                 'ipa_url': x.ente_azionista.ipa_url,
                                 'radius': 0.5,
                                 'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo],
