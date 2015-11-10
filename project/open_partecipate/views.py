@@ -223,7 +223,7 @@ def overview(request):
                     'default': {
                         'region': "tutta l'Italia",
                         'sector': 'tutti i settori',
-                        'type':   'tutte le tipologie',
+                        'type':   'partecipate',
                     },
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni] if not request.GET.get('area', '').count(',') else [{'id': request.GET.get('area'), 'label': u'più regioni'}],
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
