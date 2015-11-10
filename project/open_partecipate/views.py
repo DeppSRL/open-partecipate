@@ -40,10 +40,10 @@ def get_filtered_enti_partecipati_cronologia(request):
         'M': {'from': 10000000, 'to': 40000000},
         'L': {'from': 40000000},
     }
-    indice2_range = {
-        'S': {'to': -40},
-        'M': {'from': -40, 'to': 40},
-        'L': {'from': 40},
+    indice4_range = {
+        'S': {'to': 30},
+        'M': {'from': 30, 'to': 60},
+        'L': {'from': 60},
     }
     indice5_range = {
         'S': {'to': 30},
@@ -75,13 +75,13 @@ def get_filtered_enti_partecipati_cronologia(request):
         if 'to' in range:
             conditions['fatturato__lte'] = range['to']
 
-    indice2 = params.get('indice2')
-    if indice2 in indice2_range:
-        range = indice2_range[indice2]
+    indice4 = params.get('indice4')
+    if indice4 in indice4_range:
+        range = indice4_range[indice4]
         if 'from' in range:
-            conditions['indice2__gt'] = range['from']
+            conditions['indice4__gt'] = range['from']
         if 'to' in range:
-            conditions['indice2__lte'] = range['to']
+            conditions['indice4__lte'] = range['to']
 
     indice5 = params.get('indice5')
     if indice5 in indice5_range:
@@ -134,6 +134,7 @@ def overview(request):
 
     regioni = Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
     settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
+    tipologie = EntePartecipatoCategoria.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
 
     shareholders = EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')
     shareholder_ids = request.GET.get('shareholderId')
@@ -141,14 +142,14 @@ def overview(request):
         shareholders = sorted(shareholders, key=lambda x: (str(x.ente.id) in shareholder_ids.split(',')) * 100000 + x.num_enti, reverse=True)
 
     ranking_ids = []
-    for order_by_field in ['fatturato', 'indice2', 'indice5']:
+    for order_by_field in ['fatturato', 'indice4', 'indice5']:
         for order_by_direction in ['', '-']:
             ranking_ids += enti_partecipati_cronologia.exclude(**{'{}__isnull'.format(order_by_field): True}).order_by('{}{}'.format(order_by_direction, order_by_field)).values_list('id', flat=True)[:ranking_num_items]
 
-    avgs = enti_partecipati_cronologia.aggregate(Avg('fatturato'), Avg('indice2'), Avg('indice5'))
+    avgs = enti_partecipati_cronologia.aggregate(Avg('fatturato'), Avg('indice4'), Avg('indice5'))
     averages = {
         'dimension': avgs['fatturato__avg'] or 0,
-        'indice2': div100(avgs['indice2__avg'] or 0),
+        'indice4': div100(avgs['indice4__avg'] or 0),
         'indice5': div100(avgs['indice5__avg'] or 0),
     }
 
@@ -166,8 +167,7 @@ def overview(request):
             },
             {
                 'id': 'type',
-                'data': [{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in EntePartecipatoCategoria.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('enti_partecipati_cronologia')).order_by('-num_enti')],
-                # 'data': [{'id': x['tipologia'], 'label': EntePartecipatoCronologia.TIPOLOGIA[x['tipologia']], 'value': x['num_enti']} for x in enti_partecipati_cronologia.values('tipologia').annotate(num_enti=Count('tipologia')).order_by('-num_enti')],
+                'data': [{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in tipologie.annotate(num_enti=Count('enti_partecipati_cronologia')).order_by('-num_enti')],
             },
             {
                 'id': 'sector',
@@ -180,7 +180,7 @@ def overview(request):
                         'id': str(x.ente_partecipato.ente.id),
                         'label': x.ente_partecipato.ente.denominazione,
                         'dimension': x.fatturato,
-                        'indice2': div100(x.indice2),
+                        'indice4': div100(x.indice4),
                         'indice5': div100(x.indice5),
                     } for x in EntePartecipatoCronologia.objects.filter(pk__in=ranking_ids).select_related('ente_partecipato__ente')
                 ],
@@ -203,13 +203,13 @@ def overview(request):
                             'format': '0.[0]a',
                         },
                         {
-                            'label': 'Risultato finanziario',
-                            'value': averages['indice2'],
-                            'progress': averages['indice2'],
+                            'label': 'Spesa investimenti',
+                            'value': averages['indice4'],
+                            'progress': averages['indice4'],
                             'format': '0.0%',
                         },
                         {
-                            'label': 'Spese personale',
+                            'label': 'Spesa personale',
                             'value': averages['indice5'],
                             'progress': averages['indice5'],
                             'format': '0.0%',
@@ -224,9 +224,11 @@ def overview(request):
                     'default': {
                         'sector': 'tutti i settori',
                         'region': "tutta l'Italia",
+                        'type':   'tutte le tipologie',
                     },
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori],
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
+                    'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie],
                 },
             },
         ],
@@ -245,8 +247,8 @@ def entities(request):
                 'id': str(x.ente_partecipato_id),
                 'label': x.ente_partecipato.ente.denominazione,
                 'r': x.fatturato,
-                'x': div100(x.indice5),
-                'y': div100(x.indice2),
+                # 'x': div100(x.indice5),
+                # 'y': div100(x.indice4),
             } for x in enti_partecipati_cronologia.order_by('-fatturato')
         ],
     }
@@ -297,7 +299,7 @@ def detail(request):
                         'quota_pubblica': div100(ente_partecipato_cronologia.quota_pubblica),
                         'quote_stimate': ente_partecipato_cronologia.quote_stimate,
                         'quotato': ente_partecipato_cronologia.ente_partecipato.ente.quotato,
-                        'indicatore1': div100(ente_partecipato_cronologia.indice2),
+                        'indicatore1': ente_partecipato_cronologia.risultato_finanziario.descrizione,
                         'indicatore2': div100(ente_partecipato_cronologia.indice3),
                         'indicatore3': div100(ente_partecipato_cronologia.indice4),
                         'indicatore4': div100(ente_partecipato_cronologia.indice5),
@@ -346,7 +348,7 @@ def detail(request):
                                     'value': div100(getattr(x, 'indice{}'.format(i + 1))),
                                 } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
                             ]
-                        } for i in range(1, 5)
+                        } for i in range(3, 5)
                     ],
                 }
             ],
@@ -371,7 +373,7 @@ def info(request):
                 'sector': '|'.join([s.descrizione for s in ente_partecipato_cronologia.settori.distinct()]),
                 'type': ente_partecipato_cronologia.categoria.descrizione,
                 'dimension': ente_partecipato_cronologia.fatturato,
-                'indice2': div100(ente_partecipato_cronologia.indice2),
+                'indice4': div100(ente_partecipato_cronologia.indice4),
                 'indice5': div100(ente_partecipato_cronologia.indice5),
             }
         }

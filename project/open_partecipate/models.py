@@ -21,6 +21,10 @@ class EntePartecipatoSottotipo(BaseCodelist):
     pass
 
 
+class EntePartecipatoRisultatoFinanziario(BaseCodelist):
+    pass
+
+
 class EntePartecipatoSettore(BaseCodelist):
     pass
 
@@ -99,10 +103,11 @@ class EntePartecipatoCronologia(models.Model):
     sottotipo = models.ForeignKey(EntePartecipatoSottotipo, related_name='enti_partecipati_cronologia')
     fatturato = models.DecimalField(max_digits=14, decimal_places=2, null=True)
     indice_performance = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    indice2 = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    indice3 = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    indice4 = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    indice5 = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    indice2 = models.DecimalField(max_digits=14, decimal_places=2, null=True, help_text='Risultato finanziario')
+    indice3 = models.DecimalField(max_digits=5, decimal_places=2, null=True, help_text='Partecipazione PA')
+    indice4 = models.DecimalField(max_digits=5, decimal_places=2, null=True, help_text='Spese Investimento')
+    indice5 = models.DecimalField(max_digits=5, decimal_places=2, null=True, help_text='Spese Personale')
+    risultato_finanziario = models.ForeignKey(EntePartecipatoRisultatoFinanziario, related_name='enti_partecipati_cronologia')
     quota_pubblica = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     quote_stimate = models.BooleanField(default=False)
     altri_soci_noti = models.DecimalField(max_digits=5, decimal_places=2, null=True)
