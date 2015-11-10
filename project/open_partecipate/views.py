@@ -57,9 +57,9 @@ def get_filtered_enti_partecipati_cronologia(request):
 
     conditions['anno_riferimento'] = '2013'
 
-    entityId = params.get('entityId')
-    if entityId:
-        conditions['ente_partecipato_id'] = entityId
+    entity_id = params.get('entityId')
+    if entity_id:
+        conditions['ente_partecipato_id'] = entity_id
 
     dimension = params.get('dimension')
     if dimension in dimension_range:
@@ -87,25 +87,25 @@ def get_filtered_enti_partecipati_cronologia(request):
 
     enti_partecipati_cronologia = enti_partecipati_cronologia.filter(**conditions)
 
-    area = params.get('area')
-    if area:
-        for a in area.split(','):
-            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(regioni__cod_reg=a)
+    regions = params.get('area')
+    if regions:
+        for region in regions.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(regioni__cod_reg=region)
 
-    type = params.get('type')
-    if type:
-        for t in type.split(','):
-            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(categoria_id=t)
+    sectors = params.get('sector')
+    if sectors:
+        for sector in sectors.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(settori=sector)
 
-    sector = params.get('sector')
-    if sector:
-        for s in sector.split(','):
-            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(settori=s)
+    types = params.get('type')
+    if types:
+        for type in types.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(categoria_id=type)
 
-    shareholderId = params.get('shareholderId')
-    if shareholderId:
-        for s in shareholderId.split(','):
-            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(quote__ente_azionista=s)
+    shareholder_ids = params.get('shareholderId')
+    if shareholder_ids:
+        for shareholder_id in shareholder_ids.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(quote__ente_azionista=shareholder_id)
 
     return enti_partecipati_cronologia
 
@@ -221,13 +221,13 @@ def overview(request):
                 'data': {
                     'counter': counter,
                     'default': {
-                        'sector': 'tutti i settori',
                         'region': "tutta l'Italia",
+                        'sector': 'tutti i settori',
                         'type':   'tutte le tipologie',
                     },
-                    'sector': [{'id': request.GET.get('sector'), 'label': u'più settori'}] if request.GET.get('sector', '').count(',') else [{'id': str(x.pk), 'label': x.descrizione} for x in settori],
-                    'region': [{'id': request.GET.get('area'), 'label': u'più regioni'}] if request.GET.get('area', '').count(',') else [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
-                    'type':   [{'id': request.GET.get('type'), 'label': u'più tipologie'}] if request.GET.get('type', '').count(',') else [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie],
+                    'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni] if not request.GET.get('area', '').count(',') else [{'id': request.GET.get('area'), 'label': u'più regioni'}],
+                    'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
+                    'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie] if not request.GET.get('type', '').count(',') else [{'id': request.GET.get('type'), 'label': u'più tipologie'}],
                 },
             },
         ],
@@ -258,13 +258,13 @@ def entities(request):
 def detail(request):
     data = {}
 
-    entityId = request.GET.get('entityId')
-    if entityId:
+    entity_id = request.GET.get('entityId')
+    if entity_id:
         related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'quote__ente_azionista__ente__regione']
-        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entityId, anno_riferimento='2013')
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento='2013')
 
-        settori = ente_partecipato_cronologia.regioni_settori.order_by('-settore_quota').distinct('settore', 'settore_quota').select_related('settore')
         regioni = ente_partecipato_cronologia.regioni_settori.order_by('-regione_quota').distinct('regione', 'regione_quota').select_related('regione')
+        settori = ente_partecipato_cronologia.regioni_settori.order_by('-settore_quota').distinct('settore', 'settore_quota').select_related('settore')
 
         fatturato_cluster_conditions = {}
         if 'from' in ente_partecipato_cronologia.fatturato_cluster:
@@ -292,8 +292,8 @@ def detail(request):
                         'anno_rilevazione': ente_partecipato_cronologia.ente_partecipato.ente.anno_rilevazione,
                         'tipologia': {'id': str(ente_partecipato_cronologia.categoria.pk), 'name': ente_partecipato_cronologia.categoria.descrizione},
                         'sottotipo': ente_partecipato_cronologia.sottotipo.descrizione,
-                        'settori_attivita': [{'id': x.settore.pk, 'name': x.settore.descrizione, 'quota': div100(x.settore_quota)} for x in settori],
                         'regioni_attivita': [{'id': x.regione.cod_reg, 'name': x.regione.nome, 'quota': div100(x.regione_quota)} for x in regioni],
+                        'settori_attivita': [{'id': x.settore.pk, 'name': x.settore.descrizione, 'quota': div100(x.settore_quota)} for x in settori],
                         'dimensione': ente_partecipato_cronologia.fatturato,
                         'quota_pubblica': div100(ente_partecipato_cronologia.quota_pubblica),
                         'quote_stimate': ente_partecipato_cronologia.quote_stimate,
@@ -359,10 +359,10 @@ def detail(request):
 def info(request):
     data = {}
 
-    entityId = request.GET.get('entityId')
-    if entityId:
+    entity_id = request.GET.get('entityId')
+    if entity_id:
         related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria']
-        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entityId, anno_riferimento='2013')
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento='2013')
 
         data = {
             'data': {
