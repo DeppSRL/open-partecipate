@@ -61,10 +61,6 @@ def get_filtered_enti_partecipati_cronologia(request):
     if entityId:
         conditions['ente_partecipato_id'] = entityId
 
-    area = params.get('area')
-    if area:
-        conditions['regioni__cod_reg'] = area
-
     dimension = params.get('dimension')
     if dimension in dimension_range:
         range = dimension_range[dimension]
@@ -90,6 +86,11 @@ def get_filtered_enti_partecipati_cronologia(request):
             conditions['indice5__lte'] = range['to']
 
     enti_partecipati_cronologia = enti_partecipati_cronologia.filter(**conditions)
+
+    area = params.get('area')
+    if area:
+        for a in area.split(','):
+            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(regioni__cod_reg=a)
 
     type = params.get('type')
     if type:
