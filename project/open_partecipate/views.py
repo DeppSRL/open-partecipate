@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# from rest_framework import viewsets
-# from serializers import EnteSerializer
 import decimal
 from collections import OrderedDict
 from django.core.serializers.json import DjangoJSONEncoder
@@ -348,7 +346,7 @@ def detail(request):
                                     'value': div100(getattr(x, 'indice{}'.format(i + 1))),
                                 } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
                             ]
-                        } for i in range(3, 5)
+                        } for i in range(1, 5)
                     ],
                 }
             ],
@@ -416,8 +414,3 @@ def shareholder_search(request):
 #
 #     def get_data(self, context):
 #         return context
-
-
-# class EnteViewSet(viewsets.ModelViewSet):
-#     queryset = Ente.objects.all()
-#     serializer_class = EnteSerializer
