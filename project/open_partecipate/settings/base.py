@@ -216,6 +216,7 @@ DJANGO_APPS = (
 # Apps specific for this project go here.
 LOCAL_APPS = (
     'open_partecipate',
+    'open_partecipate.api',
     'open_partecipate.territori',
     'rest_framework',
 )
