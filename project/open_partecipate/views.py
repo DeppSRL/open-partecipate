@@ -61,6 +61,10 @@ def get_filtered_enti_partecipati_cronologia(request):
     if entity_id:
         conditions['ente_partecipato_id'] = entity_id
 
+    area = params.get('area')
+    if area:
+        conditions['regioni__cod_reg'] = area
+
     dimension = params.get('dimension')
     if dimension in dimension_range:
         range = dimension_range[dimension]
@@ -86,11 +90,6 @@ def get_filtered_enti_partecipati_cronologia(request):
             conditions['indice5__lte'] = range['to']
 
     enti_partecipati_cronologia = enti_partecipati_cronologia.filter(**conditions)
-
-    regions = params.get('area')
-    if regions:
-        for region in regions.split(','):
-            enti_partecipati_cronologia = enti_partecipati_cronologia.filter(regioni__cod_reg=region)
 
     sectors = params.get('sector')
     if sectors:
@@ -131,7 +130,7 @@ def overview(request):
 
     counter = enti_partecipati_cronologia.count()
 
-    regioni = Territorio.objects.regioni().filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
+    regioni = Territorio.objects.regioni().filter(**({'cod_reg': request.GET.get('area')} if request.GET.get('area') else {'enti_partecipati_cronologia__in': enti_partecipati_cronologia})).distinct()
     settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
     tipologie = EntePartecipatoCategoria.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
 
@@ -225,7 +224,7 @@ def overview(request):
                         'sector': 'tutti i settori',
                         'type':   'partecipate',
                     },
-                    'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni] if not request.GET.get('area', '').count(',') else [{'id': request.GET.get('area'), 'label': u'più regioni'}],
+                    'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
                     'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie] if not request.GET.get('type', '').count(',') else [{'id': request.GET.get('type'), 'label': u'più tipologie'}],
                 },
@@ -345,7 +344,7 @@ def detail(request):
                                     'id': str(x.ente_partecipato.ente.id),
                                     'label': x.ente_partecipato.ente.denominazione,
                                     'value': div100(getattr(x, 'indice{}'.format(i + 1))),
-                                } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
+                                } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).distinct().order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
                             ]
                         } for i in range(1, 5)
                     ],
