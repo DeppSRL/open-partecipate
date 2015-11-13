@@ -47,7 +47,11 @@ class ApiCompaniesViewSet(viewsets.ReadOnlyModelViewSet):
         return serializer_context
 
     def get_queryset(self):
-        return EntePartecipatoCronologia.objects.filter(anno_riferimento=self.kwargs['anno_riferimento'])
+        queryset = EntePartecipatoCronologia.objects.filter(anno_riferimento=self.kwargs['anno_riferimento']).select_related('ente_partecipato__ente', 'categoria', 'sottotipo')
+        if self.kwargs.get('ente_partecipato'):
+            queryset = queryset.select_related('ente_partecipato__ente__regione', 'ente_partecipato__comune').prefetch_related('quote__ente_azionista__ente')
+
+        return queryset
 
 
 # class ApiOwnersViewSet(viewsets.ReadOnlyModelViewSet):
