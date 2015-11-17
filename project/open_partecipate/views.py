@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import decimal
 from collections import OrderedDict
+import zipfile
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg, Count
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from models import *
 
@@ -117,6 +118,7 @@ def index(request):
         ('info', request.build_absolute_uri('info/')),
         ('entity-search', request.build_absolute_uri('entity-search/')),
         ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
+        ('csv', request.build_absolute_uri('csv/')),
     ])
 
     return MyJsonResponse(data)
@@ -126,7 +128,7 @@ def overview(request):
     ranking_num_items = 100
 
     related = ['ente_partecipato__ente']
-    enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related(*related).prefetch_related(*related)
+    enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related(*related)
 
     counter = enti_partecipati_cronologia.count()
 
@@ -237,7 +239,7 @@ def overview(request):
 
 def entities(request):
     related = ['ente_partecipato__ente']
-    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(anno_riferimento='2013').select_related(*related).prefetch_related(*related)
+    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(anno_riferimento='2013').select_related(*related)
 
     data = {
         'data': [
@@ -406,6 +408,138 @@ def shareholder_search(request):
     data['input'] = input
 
     return MyJsonResponse(data)
+
+
+def csv_export(request):
+    def get_csv(objs, columns):
+        import csv
+        import datetime
+        import decimal
+        import locale
+        import unicodecsv
+        import StringIO
+
+        locale.setlocale(locale.LC_ALL, 'it_IT.UTF-8')
+
+        def get_repr(value):
+            if callable(value):
+                return '{}'.format(value())
+            return value
+
+        def get_field(instance, field):
+            field_path = field.split('.')
+            attr = instance
+            for elem in field_path:
+                try:
+                    attr = getattr(attr, elem)
+                except AttributeError:
+                    return None
+            return attr
+
+        output = StringIO.StringIO()
+
+        csv.register_dialect('my', delimiter=';', quoting=csv.QUOTE_ALL)
+        csv_writer = unicodecsv.UnicodeWriter(output, dialect='my')
+
+        csv_writer.writerow(columns.keys())
+
+        for obj in objs:
+            row = []
+            for fld in columns.values():
+                val = get_repr(get_field(obj, fld))
+
+                if val is None:
+                    val = ''
+                elif isinstance(val, bool):
+                    val = {True: u'Sì', False: 'No'}[val]
+                elif isinstance(val, datetime.date):
+                    val = val.strftime('%x')
+                elif isinstance(val, decimal.Decimal):
+                    val = locale.format('%.2f', val, grouping=True)
+                else:
+                    val = unicode(val)
+
+                row.append(val)
+
+            csv_writer.writerow(row)
+
+        return output.getvalue()
+
+    enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related('ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'risultato_finanziario')
+
+    provincie_by_cod = {x.cod_prov: x for x in Territorio.objects.provincie()}
+    for ente_partecipato_cronologia in enti_partecipati_cronologia:
+        ente_partecipato_cronologia.ente_partecipato.provincia = provincie_by_cod[ente_partecipato_cronologia.ente_partecipato.comune.cod_prov] if ente_partecipato_cronologia.ente_partecipato.comune else None
+
+    quote = Quota.objects.filter(ente_partecipato_cronologia__in=enti_partecipati_cronologia).select_related('ente_partecipato_cronologia__ente_partecipato__ente', 'ente_azionista__ente')
+
+    regioni_settori = EntePartecipatoCronologiaRegioneSettore.objects.filter(ente_partecipato_cronologia__in=enti_partecipati_cronologia).select_related('ente_partecipato_cronologia__ente_partecipato__ente', 'regione', 'settore')
+
+    response = HttpResponse(content_type='application/zip')
+
+    z = zipfile.ZipFile(response, 'w')
+
+    columns = OrderedDict([
+        ('codice', 'ente_partecipato.ente.id'),
+        ('codfisc_partiva', 'ente_partecipato.ente.codice_fiscale'),
+        ('denominazione', 'ente_partecipato.ente.denominazione'),
+        ('anno_inizio', 'ente_partecipato.anno_inizio_attivita'),
+        ('anno_cessazione', 'ente_partecipato.anno_fine_attivita'),
+        ('indirizzo', 'ente_partecipato.indirizzo'),
+        ('regione', 'ente_partecipato.ente.regione.nome'),
+        ('provincia', 'ente_partecipato.provincia.nome'),
+        ('comune', 'ente_partecipato.comune.nome'),
+        ('cap', 'ente_partecipato.cap'),
+        ('tel', 'ente_partecipato.telefono'),
+        ('fax', 'ente_partecipato.fax'),
+        ('email', 'ente_partecipato.email'),
+        ('soc_quotata', 'ente_partecipato.ente.quotato'),
+        ('anno_rilevazione', 'ente_partecipato.ente.anno_rilevazione'),
+        ('tipologia', 'get_tipologia_display'),
+        ('categoria', 'categoria.descrizione'),
+        ('sottotipo', 'sottotipo.descrizione'),
+        ('fatturato', 'fatturato'),
+        ('indice_performance', 'indice_performance'),
+        ('indice2', 'indice2'),
+        ('indice3', 'indice3'),
+        ('indice4', 'indice4'),
+        ('indice5', 'indice5'),
+        ('risultato_finanziario', 'risultato_finanziario.descrizione'),
+        ('quota_pubblica', 'quota_pubblica'),
+        ('quote_stimate', 'quote_stimate'),
+        ('altri_soci_noti', 'altri_soci_noti'),
+        ('altri_soci_noti_pubblici', 'altri_soci_noti_pubblici'),
+        ('altri_soci_noti_privati', 'altri_soci_noti_privati'),
+        ('altri_soci_non_noti', 'altri_soci_non_noti')
+    ])
+
+    z.writestr('partecipate.csv', get_csv(enti_partecipati_cronologia, columns))
+
+    columns = OrderedDict([
+        ('partecipata_codice', 'ente_partecipato_cronologia.ente_partecipato.ente.id'),
+        ('partecipata_denominazione', 'ente_partecipato_cronologia.ente_partecipato.ente.denominazione'),
+        ('azionista_codice', 'ente_azionista.ente.id'),
+        ('azionista_denominazione', 'ente_azionista.ente.denominazione'),
+        ('quota', 'quota'),
+    ])
+
+    z.writestr('quote.csv', get_csv(quote, columns))
+
+    columns = OrderedDict([
+        ('codice', 'ente_partecipato_cronologia.ente_partecipato.ente.id'),
+        ('denominazione', 'ente_partecipato_cronologia.ente_partecipato.ente.denominazione'),
+        ('regione', 'regione.denominazione'),
+        ('quota_regione', 'regione_quota'),
+        ('settore', 'settore.descrizione'),
+        ('quota_settore', 'settore_quota'),
+    ])
+
+    z.writestr('regioni_settori.csv', get_csv(regioni_settori, columns))
+
+    response['Content-Disposition'] = 'attachment; filename=openpartecipate.csv.zip'
+    response['Content-Length'] = response.tell()
+
+    return response
 
 
 # class JSONResponseMixin(object):

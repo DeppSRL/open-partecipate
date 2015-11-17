@@ -16,6 +16,7 @@ urls = (
     url(r'^info/', info),
     url(r'^entity-search/', entity_search),
     url(r'^shareholder-search/', shareholder_search),
+    url(r'^csv/', csv_export),
 )
 urlpatterns = patterns('', *urls)
 
