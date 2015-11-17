@@ -476,7 +476,8 @@ def csv_export(request):
 
     regioni_settori = EntePartecipatoCronologiaRegioneSettore.objects.filter(ente_partecipato_cronologia__in=enti_partecipati_cronologia).select_related('ente_partecipato_cronologia__ente_partecipato__ente', 'regione', 'settore')
 
-    response = HttpResponse(content_type='application/octet-stream')
+    response = HttpResponse(content_type='application/x-zip-compressed')
+    response['Content-Disposition'] = 'attachment; filename=openpartecipate.csv.zip'
 
     z = zipfile.ZipFile(response, 'w')
 
@@ -538,9 +539,6 @@ def csv_export(request):
     z.writestr('regioni_settori.csv', get_csv(regioni_settori, columns))
 
     z.close()
-
-    response['Content-Disposition'] = 'attachment; filename=openpartecipate.csv.zip'
-    # response['Content-Length'] = response.tell()
 
     return response
 
