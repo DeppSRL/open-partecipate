@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import decimal
 from collections import OrderedDict
-import zipfile
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg, Count
 from django.http import JsonResponse, HttpResponse
@@ -411,6 +410,8 @@ def shareholder_search(request):
 
 
 def csv_export(request):
+    import zipfile
+
     def get_csv(objs, columns):
         import csv
         import datetime
@@ -475,7 +476,7 @@ def csv_export(request):
 
     regioni_settori = EntePartecipatoCronologiaRegioneSettore.objects.filter(ente_partecipato_cronologia__in=enti_partecipati_cronologia).select_related('ente_partecipato_cronologia__ente_partecipato__ente', 'regione', 'settore')
 
-    response = HttpResponse(content_type='application/zip')
+    response = HttpResponse(content_type='application/x-zip-compressed')
 
     z = zipfile.ZipFile(response, 'w')
 
