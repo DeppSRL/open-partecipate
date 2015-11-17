@@ -537,8 +537,10 @@ def csv_export(request):
 
     z.writestr('regioni_settori.csv', get_csv(regioni_settori, columns))
 
+    z.close()
+
     response['Content-Disposition'] = 'attachment; filename=openpartecipate.csv.zip'
-    response['Content-Length'] = response.tell()
+    # response['Content-Length'] = response.tell()
 
     return response
 
