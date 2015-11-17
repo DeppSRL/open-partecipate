@@ -476,7 +476,7 @@ def csv_export(request):
 
     regioni_settori = EntePartecipatoCronologiaRegioneSettore.objects.filter(ente_partecipato_cronologia__in=enti_partecipati_cronologia).select_related('ente_partecipato_cronologia__ente_partecipato__ente', 'regione', 'settore')
 
-    response = HttpResponse(content_type='application/x-zip-compressed')
+    response = HttpResponse(content_type='application/octet-stream')
 
     z = zipfile.ZipFile(response, 'w')
 
