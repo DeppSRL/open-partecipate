@@ -138,7 +138,7 @@ def overview(request):
     shareholders = EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')
     shareholder_ids = request.GET.get('shareholderId')
     if shareholder_ids:
-        shareholders = sorted(shareholders, key=lambda x: (str(x.ente.id) in shareholder_ids.split(',')) * 100000 + x.num_enti, reverse=True)
+        shareholders = sorted(shareholders, key=lambda x: (str(x.ente.id) in shareholder_ids.split(','), x.num_enti), reverse=True)
 
     ranking_ids = []
     for order_by_field in ['fatturato', 'indice4', 'indice5']:
@@ -170,7 +170,7 @@ def overview(request):
             },
             {
                 'id': 'sector',
-                'data': sorted([{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in settori.annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')], key=lambda x: 0 if x['id'] == '00029' else x['value'], reverse=True),
+                'data': sorted([{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in settori.annotate(num_enti=Count('enti_partecipati_cronologia', distinct=True)).order_by('-num_enti')], key=lambda x: (x['id'] in request.GET.get('sector', '').split(','), x['id'] != '00029', x['value']), reverse=True),
             },
             {
                 'id': 'ranking',
@@ -302,6 +302,7 @@ def detail(request):
                         'indicatore2': div100(ente_partecipato_cronologia.indice3),
                         'indicatore3': div100(ente_partecipato_cronologia.indice4),
                         'indicatore4': div100(ente_partecipato_cronologia.indice5),
+                        'ipa_url': ente_partecipato_cronologia.ente_partecipato.ente.ipa_url,
                     },
                 },
                 {
@@ -321,7 +322,7 @@ def detail(request):
                                 'id': str(x.ente_azionista.ente.id),
                                 'label': x.ente_azionista.ente.denominazione,
                                 'part_perc': div100(x.quota),
-                                'ipa_url': x.ente_azionista.ipa_url,
+                                'ipa_url': x.ente_azionista.ente.ipa_url,
                                 'radius': 0.5,
                                 'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo],
                             } for x in ente_partecipato_cronologia.quote.all()
@@ -410,15 +411,17 @@ def shareholder_search(request):
 
 
 def csv_export(request):
+    import StringIO
+    import os
     import zipfile
+    from django.conf import settings
 
-    def get_csv(objs, columns):
+    def get_buffered_csv(objs, columns):
         import csv
         import datetime
         import decimal
         import locale
         import unicodecsv
-        import StringIO
 
         locale.setlocale(locale.LC_ALL, 'it_IT.UTF-8')
 
@@ -437,10 +440,10 @@ def csv_export(request):
                     return None
             return attr
 
-        output = StringIO.StringIO()
+        buffer = StringIO.StringIO()
 
         csv.register_dialect('my', delimiter=';', quoting=csv.QUOTE_ALL)
-        csv_writer = unicodecsv.UnicodeWriter(output, dialect='my')
+        csv_writer = unicodecsv.UnicodeWriter(buffer, dialect='my')
 
         csv_writer.writerow(columns.keys())
 
@@ -452,7 +455,7 @@ def csv_export(request):
                 if val is None:
                     val = ''
                 elif isinstance(val, bool):
-                    val = {True: u'Sì', False: 'No'}[val]
+                    val = {True: u'Sì', False: u'No'}[val]
                 elif isinstance(val, datetime.date):
                     val = val.strftime('%x')
                 elif isinstance(val, decimal.Decimal):
@@ -464,7 +467,7 @@ def csv_export(request):
 
             csv_writer.writerow(row)
 
-        return output.getvalue()
+        return buffer.getvalue()
 
     enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related('ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'risultato_finanziario')
 
@@ -515,7 +518,7 @@ def csv_export(request):
         ('altri_soci_non_noti', 'altri_soci_non_noti')
     ])
 
-    z.writestr('partecipate.csv', get_csv(enti_partecipati_cronologia, columns))
+    z.writestr('partecipate.csv', get_buffered_csv(enti_partecipati_cronologia, columns))
 
     columns = OrderedDict([
         ('partecipata_codice', 'ente_partecipato_cronologia.ente_partecipato.ente.id'),
@@ -525,7 +528,7 @@ def csv_export(request):
         ('quota', 'quota'),
     ])
 
-    z.writestr('quote.csv', get_csv(quote, columns))
+    z.writestr('quote.csv', get_buffered_csv(quote, columns))
 
     columns = OrderedDict([
         ('codice', 'ente_partecipato_cronologia.ente_partecipato.ente.id'),
@@ -536,7 +539,12 @@ def csv_export(request):
         ('quota_settore', 'settore_quota'),
     ])
 
-    z.writestr('regioni_settori.csv', get_csv(regioni_settori, columns))
+    z.writestr('regioni_settori.csv', get_buffered_csv(regioni_settori, columns))
+
+    buffer = StringIO.StringIO()
+    with open(os.path.join(settings.RESOURCES_PATH, 'metadati.txt'), 'rb') as f:
+        buffer.write(f.read())
+    z.writestr('metadati.txt', buffer.getvalue())
 
     z.close()
 

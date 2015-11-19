@@ -254,7 +254,6 @@ class Command(BaseCommand):
             ente_azionista = EnteAzionista.objects.create(
                 ente=get_ente(row),
                 tipo_controllo=getattr(EnteAzionista.TIPO_CONTROLLO, row['tipo_controllo']),
-                ipa_url=row['url_scheda_IPA'],
             )
             self._log(u'{}/{} - Creato ente azionista: {}'.format(n, df_count, ente_azionista))
 
@@ -318,6 +317,7 @@ def get_ente(row):
             'regione': get_ente.regione_den2obj[row['regione']] if row['regione'] in get_ente.regione_den2obj else None,
             'quotato': row['soc_quotata'],
             'anno_rilevazione': row['anno_rilevazione'],
+            'ipa_url': row['url_scheda_IPA'],
         },
     )
 

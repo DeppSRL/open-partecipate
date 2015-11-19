@@ -56,7 +56,8 @@ class EntePartecipatoCronologiaDetailSerializer(serializers.ModelSerializer):
             ('quotato', obj.ente_partecipato.ente.quotato),
             ('data_validity_year', obj.ente_partecipato.ente.anno_rilevazione),
             ('ownership_is_estimated', obj.quote_stimate),
-            ('ownership', [{'owner_label': x.ente_azionista.ente.denominazione, 'owner_type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo], 'fraction_owned': div100(x.quota)} for x in obj.quote.all()])
+            ('ownership', [{'owner_label': x.ente_azionista.ente.denominazione, 'owner_type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo], 'fraction_owned': div100(x.quota)} for x in obj.quote.all()]),
+            ('ipa_url', obj.ente_partecipato.ente.ipa_url),
         ])
 
     class Meta:

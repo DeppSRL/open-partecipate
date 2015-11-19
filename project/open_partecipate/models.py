@@ -46,6 +46,7 @@ class Ente(models.Model):
     regione = models.ForeignKey(Territorio, related_name='enti', null=True, limit_choices_to={'tipo': Territorio.TIPO.R})
     quotato = models.BooleanField(default=False)
     anno_rilevazione = models.CharField(max_length=4)
+    ipa_url = models.URLField(max_length=150, null=True)
 
     def __unicode__(self):
         return u'{}'.format(self.denominazione)
@@ -60,7 +61,6 @@ class EnteAzionista(models.Model):
 
     ente = models.OneToOneField(Ente, primary_key=True)
     tipo_controllo = models.CharField(max_length=3, choices=TIPO_CONTROLLO, db_index=True)
-    ipa_url = models.URLField(max_length=150, null=True)
 
     def __unicode__(self):
         return u'{}'.format(self.ente)
