@@ -135,11 +135,6 @@ def overview(request):
     settori = EntePartecipatoSettore.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
     tipologie = EntePartecipatoCategoria.objects.filter(enti_partecipati_cronologia__in=enti_partecipati_cronologia).distinct()
 
-    shareholders = EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')
-    shareholder_ids = request.GET.get('shareholderId')
-    if shareholder_ids:
-        shareholders = sorted(shareholders, key=lambda x: (str(x.ente.id) in shareholder_ids.split(','), x.num_enti), reverse=True)
-
     ranking_ids = []
     for order_by_field in ['fatturato', 'indice4', 'indice5']:
         for order_by_direction in ['', '-']:
@@ -166,7 +161,7 @@ def overview(request):
             },
             {
                 'id': 'type',
-                'data': [{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in tipologie.annotate(num_enti=Count('enti_partecipati_cronologia')).order_by('-num_enti')],
+                'data': sorted([{'id': str(x.pk), 'label': x.descrizione, 'value': x.num_enti} for x in tipologie.annotate(num_enti=Count('enti_partecipati_cronologia')).order_by('-num_enti')], key=lambda x: (x['id'] in request.GET.get('type', '').split(','), x['value']), reverse=True),
             },
             {
                 'id': 'sector',
@@ -186,7 +181,7 @@ def overview(request):
             },
             {
                 'id': 'shareholder',
-                'data': [{'id': str(x.ente.id), 'label': x.ente.denominazione, 'value': x.num_enti} for x in shareholders[:5]],
+                'data': sorted([{'id': str(x.ente.id), 'label': x.ente.denominazione, 'value': x.num_enti} for x in EnteAzionista.objects.filter(tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).annotate(num_enti=Count('quote__ente_partecipato_cronologia')).order_by('-num_enti').select_related('ente')], key=lambda x: (x['id'] in request.GET.get('shareholderId', '').split(','), x['value']), reverse=True)[:5],
             },
             {
                 'id': 'average',
