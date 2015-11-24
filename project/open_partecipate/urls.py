@@ -7,9 +7,10 @@ from django.conf.urls.static import static
 from views import *
 
 urls = (
+    url(r'^$', include('open_partecipate.api.urls')),
     url(r'^api/', include('open_partecipate.api.urls')),
 
-    url(r'^$', index),
+    url(r'^endpoints/$', index),
     url(r'^overview/', overview),
     url(r'^entities/', entities),
     url(r'^detail/', detail),

@@ -111,13 +111,13 @@ def get_filtered_enti_partecipati_cronologia(request):
 
 def index(request):
     data = OrderedDict([
-        ('overview', request.build_absolute_uri('overview/')),
-        ('entities', request.build_absolute_uri('entities/')),
-        ('detail', request.build_absolute_uri('detail/')),
-        ('info', request.build_absolute_uri('info/')),
-        ('entity-search', request.build_absolute_uri('entity-search/')),
-        ('shareholder-search', request.build_absolute_uri('shareholder-search/')),
-        ('csv', request.build_absolute_uri('csv/')),
+        ('overview', request.build_absolute_uri('/overview/')),
+        ('entities', request.build_absolute_uri('/entities/')),
+        ('detail', request.build_absolute_uri('/detail/')),
+        ('info', request.build_absolute_uri('/info/')),
+        ('entity-search', request.build_absolute_uri('/entity-search/')),
+        ('shareholder-search', request.build_absolute_uri('/shareholder-search/')),
+        ('csv', request.build_absolute_uri('/csv/')),
     ])
 
     return MyJsonResponse(data)

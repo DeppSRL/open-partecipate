@@ -9,6 +9,15 @@ from rest_framework.views import APIView
 
 
 class ApiRootView(APIView):
+    """
+    This is the root entry-point of the OpenPartecipate APIs.
+
+    The APIs are read-only, freely accessible to all through HTTP requests.
+
+    Responses are emitted in both browseable-HTML and JSON formats.
+
+    The root entry-point list all available data years.
+    """
     def get(self, request, **kwargs):
         format = kwargs.get('format', None)
 
@@ -20,6 +29,9 @@ class ApiRootView(APIView):
 
 
 class ApiYearView(APIView):
+    """
+    List all available data set for each year.
+    """
     def get(self, request, **kwargs):
         format = kwargs.get('format', None)
 
@@ -32,6 +44,15 @@ class ApiYearView(APIView):
 
 
 class ApiCompaniesViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    List and details of all companies.
+
+    The list results are paginated to 10 items per page.
+
+    Le pagine possono essere navigate tramite i link "next" e "previous".
+
+    La scheda di dettaglio può essere raggiunta tramite il link "url" di ogni elemento della lista.
+    """
     lookup_field = 'ente_partecipato'
 
     def get_serializer_class(self):
