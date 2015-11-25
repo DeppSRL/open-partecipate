@@ -1,5 +1,5 @@
-OpenPartercipate
-================
+OpenPartecipate
+===============
 
 Cos'è e come funziona
 ---------------------
