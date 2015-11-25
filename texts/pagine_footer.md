@@ -1,5 +1,5 @@
-CPT
-===
+OpenPartecipate
+===============
 
 Cos'è e come funziona
 ---------------------
@@ -102,9 +102,11 @@ OpenData
 
 Scarica gli OpenData
 --------------------
-Il set di dati utilizzato per la realizzazione dell'applicazione è disponibile sotto forma di un insieme di files collegati fra di loro, in formato aperto CSV. Il pacchetto, in formato compresso .zip, è [scaricabile qui http://link_scaricamento_open_data_totale].
+Il set di dati utilizzato per la realizzazione dell'applicazione è disponibile sotto forma di un insieme di files collegati fra di loro, in formato aperto CSV. Il pacchetto, in formato compresso .zip, è [scaricabile qui](http://api.openpartecipate.staging.depp.it/csv/?).
 
-Il pacchetto contiene un file di metadati, in formato testuale, che contiene la descrizione dei campi di ciascun file e la modalità di collegamento, nonché delle semplici istruzioni di utilizzo.
+Il pacchetto comprende un file di metadati, in formato testuale, che contiene la descrizione dei campi di ciascun file, le modalità di collegamento tra i files, nonché delle semplici istruzioni di utilizzo.
+
+E' inoltre possibile scaricare un sottoinsieme di questi dati, corrispondente ai filtri selezionati, cliccando sul pulsante *scarica i dati* posto in alto a destra nelle pagine della dashboard. Il formato dei dati è lo stesso illustrato qui sopra (pacchetto zip di files in formato CSV, con file di metadati).
 
 Gli stessi dati sono anche disponibili, per gli sviluppatori, sotto forma di una API di tipo REST HTTP (in sola lettura), in formato JSON, a questo link: http://api.openpartecipate.staging.depp.it/.
 
