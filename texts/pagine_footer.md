@@ -1,5 +1,5 @@
-CPT
-===
+OpenPartercipate
+================
 
 Cos'è e come funziona
 ---------------------
