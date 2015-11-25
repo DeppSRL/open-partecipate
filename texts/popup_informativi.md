@@ -3,7 +3,7 @@ Popup della dashboard
 
 Overview partecipate
 --------------------
-La visualizzazione mostra l’universo delle partecipate, rilevate dal Sistema CPT, rappresentate secondo la dimensione di spesa finanziaria di cassa al netto del rimborso di prestiti (link alla definizione di dimensione riportata più avanti) e distribuite in maniera casuale.
+La visualizzazione mostra l’universo delle partecipate, rilevate dal Sistema CPT, rappresentate secondo la dimensione di spesa finanziaria di cassa al netto del rimborso di prestiti e distribuite in maniera casuale.
 
 
 Distribuzione territoriale
