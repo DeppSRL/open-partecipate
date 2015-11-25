@@ -9,8 +9,11 @@ Il pacchetto zip, oltre a questo file di *metadati*, contiene tre files CSV di d
 Note
 ----
 I campi sono da intendere come valori *di stringa* o alfanumerici, e obbligatori, ove non specificato altrimenti.
-Quando possibile, sono elencati i possibili valori che quel campo può avere.
+Quando possibile, sono elencati i possibili valori che il campo assume.
 I campi non obbligatori, possono prendere valori nulli.
+
+I dati di quote, regioni e settori, possono essere riferiti alle partecipate attraverso la denominazione o il codice numerico univoco interno, a scelta del programmatore. Si consiglia l'utilizzo del codice numerico univoco interno per applicazioni avanzate, in quanto la denominazione potrebbe non verificate sempre il requisito di univocità.
+
 
 partecipate.csv
 ---------------
