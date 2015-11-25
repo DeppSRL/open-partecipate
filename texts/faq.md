@@ -100,7 +100,10 @@ I dataset di OpenPartecipate sono stati costruiti nell’ambito del Sistema Cont
 
 In quale formato si possono scaricare i dataset di OpenPartecipate?
 -------------------------------------------------------------------
-Tutti i dataset di OpenPartecipate sono resi disponibili in formato aperto CSV. INSERIRE SPIEGAZIONI DELLE API (DEPP)
+Tutti i dataset di OpenPartecipate sono resi disponibili in formato aperto CSV e sotto forma di API, per permettere la loro integrazione all'interno di applicazioni di terze parti.
+
+I dettagli sull'utilizzo degli OpenData, sono disponibili alla pagina [Scarica i dati](/#/scarica_i_dat) della sezione OpenData.
+
 
 Posso salvare e/o condividere le mie visualizzazioni personalizzate?
 --------------------------------------------------------------------
