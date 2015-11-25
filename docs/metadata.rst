@@ -76,7 +76,7 @@ tipologia
 categoria
   categorizzazione di secondo livello;
   può prendere questi valori:
-  
+     
   - Altre società di servizi
   - Autorità ed Enti portuali
   - Aziende pubbliche e istituzioni
@@ -84,6 +84,7 @@ categoria
   - Consorzi e Forme associative
   - Enti dipendenti
   - Fondazioni culturali
+  - Parchi
   - Società di pubblici servizi  
 
 sottotipo
@@ -91,18 +92,30 @@ sottotipo
   è quello utilizzato nell'applicazione;
   può prendere questi valori:
 
+  - ATO (Ambiti Territoriali Ottimali)
   - Agenzie regionali
   - Autorità ed Enti portuali
+  - Aziende consortili di province e/o comuni
   - Aziende di edilizia residenziale di livello regionale
+  - Aziende di edilizia residenziale di livello sub-regionale
   - Aziende speciali e municipalizzate
   - Camere di commercio
+  - Consorzi  istituiti e/o partecipati dalle regioni
   - Consorzi di bonifica
   - Consorzi istituiti e/o partecipati da province e/o comuni
   - Enti di promozione turistica di livello regionale
+  - Enti di promozione turistica di livello sub-regionale
+  - Enti e Istituti di province e/o comuni
   - Enti e Istituti regionali
   - Enti per il diritto allo studio universitario
   - Enti pubblici economici di livello sub-regionale
+  - Enti pubblici economici ed Aziende regionali
+  - Fondazioni regionali - Cultura
   - Fondazioni sub-regionali - Cultura
+  - Istituzioni di province e/o comuni
+  - Istituzioni regionali
+  - Parchi Nazionali
+  - Parchi di province e/o comuni
   - Società di capitali a partecipazione regionale, per la gestione di pubblici servizi
   - Società di capitali a partecipazione sub-regionale, per la gestione di pubblici servizi
   - Società di capitali a partecipazione regionale con attività diversa dalla gestione di pubblici servizi
@@ -159,3 +172,94 @@ altri_soci_non_noti (valore percentuale, 2 cifre decimali)
   percentuale di azioni in mano ad altri soci non noti
   queste partecipazioni non sono esplicitate nel dettaglio delle quote
 
+
+quote.csv
+---------
+
+partecipata_codice (valore intero)
+  codice numerico univoco interno della partecipata
+
+partecipata_denominazione
+  denominazione della partecipata
+
+azionista_codice (valore intero)
+  codice numerico univoco interno della partecipante
+
+azionista_denominazione
+  denominazione della partecipante
+
+quota (valore percentuale, 2 cifre decimali)
+  quota percentuale di azioni della partecipata, posseduta dalla partecipante
+  
+  
+regioni_settori.csv
+-------------------
+
+codice (valore intero)
+  codice numerico univoco interno della partecipata
+
+denominazione
+  denominazione della partecipata
+
+regione
+  regione in cui la partecipata opera;
+  assume i seguenti ventuno valori (le regioni, con le province autonome del trentino-alto adige):
+  - ABRUZZO
+  - BASILICATA
+  - CALABRIA
+  - CAMPANIA
+  - EMILIA-ROMAGNA
+  - FRIULI VENEZIA GIULIA
+  - LAZIO
+  - LIGURIA
+  - LOMBARDIA
+  - MARCHE
+  - MOLISE
+  - P.A. DI BOLZANO
+  - P.A. DI TRENTO
+  - PIEMONTE
+  - PUGLIA
+  - SARDEGNA
+  - SICILIA
+  - TOSCANA
+  - UMBRIA
+  - VALLE D'AOSTA/VALLÉE D'AOSTE
+  - VENETO
+
+quota_regione (valore percentuale, 2 cifre decimali)
+  quota percentuale di attività nella data regione
+
+settore
+  settore in cui la partecipata opera;
+  assume i seguenti valori:
+  
+  - Agricoltura
+  - Altre in campo economico
+  - Altre opere pubbliche
+  - Altri interventi igenico sanitari
+  - Altri trasporti
+  - Ambiente
+  - Amministrazione Generale
+  - Commercio
+  - Cultura e servizi ricreativi
+  - Edilizia abitativa e urbanistica
+  - Energia
+  - Formazione
+  - Industria e Artigianato
+  - Interventi in campo sociale (assist. e benef.)
+  - Istruzione
+  - Lavoro
+  - Oneri non ripartibili
+  - Pesca marittima e Acquicoltura
+  - Previdenza e Integrazioni Salariali
+  - Ricerca e Sviluppo (R. & S.)
+  - Sanita'
+  - Servizio Idrico Integrato
+  - Sicurezza pubblica
+  - Smaltimento dei Rifiuti
+  - Telecomunicazioni
+  - Turismo
+  - Viabilita'
+  
+quota_settore (valore percentuale, 2 cifre decimali)
+  quota percentuale di attività nel dato settore
