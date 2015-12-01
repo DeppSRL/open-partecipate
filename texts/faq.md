@@ -11,7 +11,7 @@ Qual è la definizione di partecipata locale?
 
 Quali informazioni sono contenute in OpenPartecipate?
 -----------------------------------------------------
-Per ciascuna partecipata locale inclusa in OpenPartecipate sono riportate, per l’anno finanziario 2013, le principali informazioni anagrafiche, la quota di partecipazione pubblica, la denominazione degli enti partecipanti, nonché alcuni indicatori espressi in termini di flussi finanziari di cassa, quali la dimensione di spesa al netto del rimborso dei prestiti, l’incidenza percentuale delle spese di investimento e di personale, il risultato finanziario.
+Per ciascuna partecipata locale inclusa in OpenPartecipate sono riportate, per l’anno finanziario 2013, le principali informazioni anagrafiche, la quota di partecipazione pubblica, la denominazione degli enti partecipanti, nonché alcuni indicatori espressi in termini di flussi finanziari di cassa, quali la dimensione di spesa al netto del rimborso dei prestiti, l’incidenza percentuale delle spese di investimento e di personale.
 
 In OpenPartecipate posso trovare tutte le aziende partecipate dello Stato italiano?
 -----------------------------------------------------------------------------------
@@ -60,10 +60,6 @@ La dimensione della partecipata è determinata dal valore totale della spesa fin
 Cosa si intende per partecipazione pubblica diretta?
 ----------------------------------------------------
 Per partecipazione pubblica diretta si intende la percentuale di azioni detenute dall’ente pubblico partecipante o, per estensione nel caso di soggetti che non siano società (ad esempio gli Enti dipendenti), la percentuale di controllo esercitato dall’ente pubblico. 
-
-Qual è il significato del risultato finanziario della partecipata?
-------------------------------------------------------------------
-L’indicatore misura la presenza o meno di deficit nei flussi finanziari. In OpenPartecipate è calcolato come totale delle entrate meno totale delle spese, al netto dell’accensione e del rimborso di prestiti, così come calcolati in CPT, ovvero in termini di flussi finanziari di cassa. I risultati così ottenuti, valutati in rapporto al totale delle entrate, sono successivamente divisi in cinque classi che ne qualificano l’entità del deficit/surplus.
 
 Qual è il significato dell’incidenza percentuale delle spese di personale?
 --------------------------------------------------------------------------
