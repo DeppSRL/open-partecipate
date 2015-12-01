@@ -114,3 +114,4 @@ I dati e i testi di OpenPartecipate, quando non altrimenti specificato, sono ril
 
 Si tratta della licenza Creative Commons 4.0 International con condizioni di utilizzo BY (Attribuzione). È dunque possibile riprodurre, distribuire e comunicare al pubblico dati e analisi, modificarli e adattarli, usarli per fini commerciali riportando sempre la fonte indicata.
 
+Il titolare dei dati è l’ Agenzia per la coesione territoriale che ha sede in via Sicilia 162/c Roma e il responsabile del trattamento dei dati ai sensi dell'articolo 29 del Codice in materia di protezione dei dati personali è la società DEPP S.r.l.
