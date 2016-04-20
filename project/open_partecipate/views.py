@@ -464,7 +464,7 @@ def csv_export(request):
 
         return buffer.getvalue()
 
-    enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related('ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'risultato_finanziario')
+    enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related('ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo')
 
     provincie_by_cod = {x.cod_prov: x for x in Territorio.objects.provincie()}
     for ente_partecipato_cronologia in enti_partecipati_cronologia:
@@ -499,12 +499,9 @@ def csv_export(request):
         ('categoria', 'categoria.descrizione'),
         ('sottotipo', 'sottotipo.descrizione'),
         ('dimensione', 'fatturato'),
-        # ('indice_performance', 'indice_performance'),
-        # ('risultato_finanziario', 'indice2'),
         ('partecipazione_pa', 'indice3'),
         ('spese_investimento', 'indice4'),
         ('spese_personale', 'indice5'),
-        # ('risultato_finanziario', 'risultato_finanziario.descrizione'),
         ('quota_pubblica', 'quota_pubblica'),
         ('quote_stimate', 'quote_stimate'),
         ('altri_soci_noti', 'altri_soci_noti'),

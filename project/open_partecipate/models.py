@@ -107,7 +107,7 @@ class EntePartecipatoCronologia(models.Model):
     indice3 = models.DecimalField(max_digits=5, decimal_places=2, null=True, help_text='Partecipazione PA')
     indice4 = models.DecimalField(max_digits=5, decimal_places=2, null=True, help_text='Spese Investimento')
     indice5 = models.DecimalField(max_digits=5, decimal_places=2, null=True, help_text='Spese Personale')
-    risultato_finanziario = models.ForeignKey(EntePartecipatoRisultatoFinanziario, related_name='enti_partecipati_cronologia')
+    risultato_finanziario = models.ForeignKey(EntePartecipatoRisultatoFinanziario, null=True, related_name='enti_partecipati_cronologia')
     quota_pubblica = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     quote_stimate = models.BooleanField(default=False)
     altri_soci_noti = models.DecimalField(max_digits=5, decimal_places=2, null=True)
@@ -148,6 +148,7 @@ class EntePartecipatoCronologiaRegioneSettore(models.Model):
         return u'{}'.format(self.ente_partecipato_cronologia)
 
     class Meta:
+        verbose_name = 'EPCRS'
         ordering = ['ente_partecipato_cronologia', 'regione', 'settore']
         unique_together = ('ente_partecipato_cronologia', 'regione', 'settore')
         index_together = [
