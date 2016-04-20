@@ -177,7 +177,7 @@ class Command(BaseCommand):
         tipologia_desc2cod = {x[1]: x[0] for x in EntePartecipatoCronologia.TIPOLOGIA}
         categoria_desc2obj = self._import_enti_partecipati_categoria(df)
         sottotipo_cod2obj = self._import_codelist(df[['sottotipo']], EntePartecipatoSottotipo)
-        risultato_finanziario_cod2obj = self._import_codelist(df[['risultato_finanziario']], EntePartecipatoRisultatoFinanziario)
+#        risultato_finanziario_cod2obj = self._import_codelist(df[['risultato_finanziario']], EntePartecipatoRisultatoFinanziario)
 
         df_count = len(df)
 
@@ -194,7 +194,7 @@ class Command(BaseCommand):
                 indice3=row['indice3'],
                 indice4=row['indice4'],
                 indice5=row['indice5'],
-                risultato_finanziario=risultato_finanziario_cod2obj[row['risultato_finanziario'].split(' - ', 1)[0]],
+                # risultato_finanziario=risultato_finanziario_cod2obj[row['risultato_finanziario'].split(' - ', 1)[0]],
                 quota_pubblica=row['quota_pubblica'],
                 quote_stimate=row['quote_stimate'],
                 altri_soci_noti=row['altri_soci_noti'],
@@ -253,7 +253,7 @@ class Command(BaseCommand):
         for n, (index, row) in enumerate(df.iterrows(), 1):
             ente_azionista = EnteAzionista.objects.create(
                 ente=get_ente(row),
-                tipo_controllo=getattr(EnteAzionista.TIPO_CONTROLLO, row['tipo_controllo']),
+                tipo_controllo=getattr(EnteAzionista.TIPO_CONTROLLO, row['tipo_controllo'].upper().strip()),
             )
             self._log(u'{}/{} - Creato ente azionista: {}'.format(n, df_count, ente_azionista))
 
