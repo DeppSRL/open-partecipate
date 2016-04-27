@@ -76,7 +76,7 @@ class Command(BaseCommand):
                 'di_cui_pubblici': convert_float,
                 'di_cui_privati': convert_float,
                 'altri_soci_non_noti': convert_float,
-                'quote_stimate': lambda x: x.lower() == 'x',
+                'quote_stimate': lambda x: x.lower() == 'si',
                 'quota_regione': convert_float,
                 'quota_settore': convert_float,
                 'azionista_codice': convert_int,
