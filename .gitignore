@@ -33,3 +33,7 @@ node_modules/
 
 # Campass
 .sass-cache
+
+# resources
+/resources/*.zip
+

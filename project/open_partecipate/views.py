@@ -277,8 +277,8 @@ def detail(request):
                         'codice_fiscale': ente_partecipato_cronologia.ente_partecipato.ente.codice_fiscale,
                         'indirizzo': ente_partecipato_cronologia.ente_partecipato.indirizzo,
                         'cap': ente_partecipato_cronologia.ente_partecipato.cap,
-                        'comune': ente_partecipato_cronologia.ente_partecipato.comune.nome,
-                        'provincia': ente_partecipato_cronologia.ente_partecipato.comune.provincia.nome,
+                        'comune': ente_partecipato_cronologia.ente_partecipato.comune.nome if ente_partecipato_cronologia.ente_partecipato.comune else '',
+                        'provincia': ente_partecipato_cronologia.ente_partecipato.comune.provincia.nome if ente_partecipato_cronologia.ente_partecipato.comune and ente_partecipato_cronologia.ente_partecipato.comune.provincia else '',
                         'regione': ente_partecipato_cronologia.ente_partecipato.ente.regione.nome,
                         'telefono': ente_partecipato_cronologia.ente_partecipato.telefono,
                         'fax': ente_partecipato_cronologia.ente_partecipato.fax,
@@ -319,7 +319,7 @@ def detail(request):
                                 'part_perc': div100(x.quota),
                                 'ipa_url': x.ente_azionista.ente.ipa_url,
                                 'radius': 0.5,
-                                'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo],
+                                'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person', 'PART': 'shareholder'}[x.ente_azionista.tipo_controllo if not x.ente_azionista.ente.is_partecipato() else 'PART'],
                             } for x in ente_partecipato_cronologia.quote.all()
                         ],
                         'edges': [

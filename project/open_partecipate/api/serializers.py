@@ -35,9 +35,9 @@ class EntePartecipatoCronologiaDetailSerializer(serializers.ModelSerializer):
             ('name', obj.ente_partecipato.ente.denominazione),
             ('fiscal_code', obj.ente_partecipato.ente.codice_fiscale),
             ('address', obj.ente_partecipato.indirizzo),
-            ('city', obj.ente_partecipato.comune.nome),
+            ('city', obj.ente_partecipato.comune.nome if obj.ente_partecipato.comune else ''),
             ('postal_code', obj.ente_partecipato.cap),
-            ('province', obj.ente_partecipato.comune.provincia.nome),
+            ('province', obj.ente_partecipato.comune.provincia.nome if obj.ente_partecipato.comune and obj.ente_partecipato.comune.provincia else ''),
             ('region', obj.ente_partecipato.ente.regione.nome),
             ('telephone', obj.ente_partecipato.telefono),
             ('fax', obj.ente_partecipato.fax),
@@ -56,7 +56,7 @@ class EntePartecipatoCronologiaDetailSerializer(serializers.ModelSerializer):
             ('quotato', obj.ente_partecipato.ente.quotato),
             ('data_validity_year', obj.ente_partecipato.ente.anno_rilevazione),
             ('ownership_is_estimated', obj.quote_stimate),
-            ('ownership', [{'owner_label': x.ente_azionista.ente.denominazione, 'owner_type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo], 'fraction_owned': div100(x.quota)} for x in obj.quote.all()]),
+            ('ownership', [{'owner_label': x.ente_azionista.ente.denominazione, 'owner_type': {'PA': 'public', 'NPA': 'private', 'PF': 'person'}[x.ente_azionista.tipo_controllo], 'fraction_owned': div100(x.quota), 'is_partecipated': x.ente_azionista.ente.is_partecipato()} for x in obj.quote.all()]),
             ('ipa_url', obj.ente_partecipato.ente.ipa_url),
         ])
 

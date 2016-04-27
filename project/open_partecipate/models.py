@@ -48,6 +48,20 @@ class Ente(models.Model):
     anno_rilevazione = models.CharField(max_length=4)
     ipa_url = models.URLField(max_length=150, null=True)
 
+    def is_partecipato(self):
+        try:
+            p = self.entepartecipato
+            return True
+        except EntePartecipato.DoesNotExist:
+            return False
+
+    def is_azionista(self):
+        try:
+            p = self.enteazionista
+            return True
+        except EnteAzionista.DoesNotExist:
+            return False
+
     def __unicode__(self):
         return u'{}'.format(self.denominazione)
 
