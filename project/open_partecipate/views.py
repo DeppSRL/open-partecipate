@@ -216,13 +216,15 @@ def overview(request):
                 'data': {
                     'counter': counter,
                     'default': {
-                        'region': "tutta l'Italia",
+                        'region': "Italia",
                         'sector': 'tutti i settori',
                         'type':   'partecipate',
+                        'year':   '2013',
                     },
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
                     'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie] if not request.GET.get('type', '').count(',') else [{'id': request.GET.get('type'), 'label': u'più tipologie'}],
+                    'year': [{'id': '2014', 'label': '2014'}]
                 },
             },
         ],
@@ -274,6 +276,7 @@ def detail(request):
                     'data': {
                         'id': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                         'ente': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
+                        'html': "dati 2013 | <a href=\"#/detail/{0}?year=2014\">2014</a>".format(entity_id),
                         'codice_fiscale': ente_partecipato_cronologia.ente_partecipato.ente.codice_fiscale,
                         'indirizzo': ente_partecipato_cronologia.ente_partecipato.indirizzo,
                         'cap': ente_partecipato_cronologia.ente_partecipato.cap,
@@ -297,6 +300,7 @@ def detail(request):
                         'indicatore2': div100(ente_partecipato_cronologia.indice3),
                         'indicatore3': div100(ente_partecipato_cronologia.indice4),
                         'indicatore4': div100(ente_partecipato_cronologia.indice5),
+                        'note': ente_partecipato_cronologia.note_indicatori,
                         'ipa_url': ente_partecipato_cronologia.ente_partecipato.ente.ipa_url,
                     },
                 },

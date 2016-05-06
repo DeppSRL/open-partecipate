@@ -124,6 +124,7 @@ class EntePartecipatoCronologia(models.Model):
     risultato_finanziario = models.ForeignKey(EntePartecipatoRisultatoFinanziario, null=True, related_name='enti_partecipati_cronologia')
     quota_pubblica = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     quote_stimate = models.BooleanField(default=False)
+    note_indicatori = models.TextField(null=True)
     altri_soci_noti = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     altri_soci_noti_pubblici = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     altri_soci_noti_privati = models.DecimalField(max_digits=5, decimal_places=2, null=True)
