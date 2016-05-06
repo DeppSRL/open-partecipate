@@ -256,6 +256,11 @@ def detail(request):
     data = {}
 
     entity_id = request.GET.get('entityId')
+    year = request.GET.get('year', 2013)
+
+    # tbd: select years from available data
+    years = [2013, 2014]
+
     if entity_id:
         related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'quote__ente_azionista__ente__regione']
         ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento='2013')
@@ -269,6 +274,26 @@ def detail(request):
         if 'to' in ente_partecipato_cronologia.fatturato_cluster:
             fatturato_cluster_conditions['fatturato__lte'] = ente_partecipato_cronologia.fatturato_cluster['to']
 
+        # selettore anni
+        request_host = request.META.get('HTTP_ORIGIN', '')
+        if 'visup' in request_host:
+            years_switch = "2013 | <a href=\"#/detail/{0}?year=2014\">2014</a>".format(entity_id)
+        #    years_switch = ""
+        #    first = True
+        #    for y in years:
+        #        if first:
+        #           first = False
+        #        else:
+        #           years_switch += " | "
+ 
+        #        if y == year:
+        #            years_switch += y
+        #        else:
+        #            years_switch +=  "<a href=\"#/detail/{0}?year=2014\">2014</a>".format(entity_id)
+        #         
+        else:
+            years_switch = ""
+
         data = {
             'item': [
                 {
@@ -276,7 +301,7 @@ def detail(request):
                     'data': {
                         'id': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                         'ente': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
-                        'html': "dati 2013 | <a href=\"#/detail/{0}?year=2014\">2014</a>".format(entity_id),
+                        'html': years_switch,
                         'codice_fiscale': ente_partecipato_cronologia.ente_partecipato.ente.codice_fiscale,
                         'indirizzo': ente_partecipato_cronologia.ente_partecipato.indirizzo,
                         'cap': ente_partecipato_cronologia.ente_partecipato.cap,
@@ -296,7 +321,6 @@ def detail(request):
                         'quota_pubblica': div100(ente_partecipato_cronologia.quota_pubblica),
                         'quote_stimate': ente_partecipato_cronologia.quote_stimate,
                         'quotato': ente_partecipato_cronologia.ente_partecipato.ente.quotato,
-                        # 'indicatore1': ente_partecipato_cronologia.risultato_finanziario.descrizione,
                         'indicatore2': div100(ente_partecipato_cronologia.indice3),
                         'indicatore3': div100(ente_partecipato_cronologia.indice4),
                         'indicatore4': div100(ente_partecipato_cronologia.indice5),
