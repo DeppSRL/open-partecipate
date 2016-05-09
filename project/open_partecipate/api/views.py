@@ -22,7 +22,7 @@ class ApiRootView(APIView):
         format = kwargs.get('format', None)
 
         data = OrderedDict([
-            (anno_riferimento, reverse('api-year', kwargs={'anno_riferimento': anno_riferimento}, request=request, format=format)) for anno_riferimento in EntePartecipatoCronologia.objects.values_list('anno_riferimento', flat=True).distinct().order_by('anno_riferimento')
+            (anno_riferimento, reverse('api-year', kwargs={'anno_riferimento': anno_riferimento}, request=request, format=format)) for anno_riferimento in EntePartecipatoCronologia.objects.anni_riferimento()
         ])
 
         return Response(data)

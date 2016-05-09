@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 import decimal
 from collections import OrderedDict
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg, Count
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from models import *
+
+
+DEFAULT_YEAR = getattr(settings, 'DEFAULT_YEAR', EntePartecipatoCronologia.objects.anni_riferimento().first())
 
 
 def div100(value):
@@ -55,7 +59,7 @@ def get_filtered_enti_partecipati_cronologia(request):
 
     conditions = {}
 
-    conditions['anno_riferimento'] = '2013'
+    conditions['anno_riferimento'] = params.get('year', DEFAULT_YEAR)
 
     entity_id = params.get('entityId')
     if entity_id:
@@ -216,15 +220,15 @@ def overview(request):
                 'data': {
                     'counter': counter,
                     'default': {
-                        'region': "Italia",
+                        'region': 'Italia',
                         'sector': 'tutti i settori',
                         'type':   'partecipate',
-                        'year':   '2013',
+                        'year':   DEFAULT_YEAR,
                     },
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
                     'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie] if not request.GET.get('type', '').count(',') else [{'id': request.GET.get('type'), 'label': u'più tipologie'}],
-                    'year': [{'id': '2014', 'label': '2014'}]
+                    'year':   [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
                 },
             },
         ],
@@ -234,8 +238,10 @@ def overview(request):
 
 
 def entities(request):
+    year = request.GET.get('year', DEFAULT_YEAR)
+
     related = ['ente_partecipato__ente']
-    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(anno_riferimento='2013').select_related(*related)
+    enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(anno_riferimento=year).select_related(*related)
 
     data = {
         'data': [
@@ -256,14 +262,11 @@ def detail(request):
     data = {}
 
     entity_id = request.GET.get('entityId')
-    year = request.GET.get('year', 2013)
-
-    # tbd: select years from available data
-    years = [2013, 2014]
-
     if entity_id:
+        year = request.GET.get('year', DEFAULT_YEAR)
+
         related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'quote__ente_azionista__ente__regione']
-        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento='2013')
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento=year)
 
         regioni = ente_partecipato_cronologia.regioni_settori.order_by('-regione_quota').distinct('regione', 'regione_quota').select_related('regione')
         settori = ente_partecipato_cronologia.regioni_settori.order_by('-settore_quota').distinct('settore', 'settore_quota').select_related('settore')
@@ -275,24 +278,10 @@ def detail(request):
             fatturato_cluster_conditions['fatturato__lte'] = ente_partecipato_cronologia.fatturato_cluster['to']
 
         # selettore anni
-        request_host = request.META.get('HTTP_ORIGIN', '')
-        if 'visup' in request_host:
-            years_switch = "2013 | <a href=\"#/detail/{0}?year=2014\">2014</a>".format(entity_id)
-        #    years_switch = ""
-        #    first = True
-        #    for y in years:
-        #        if first:
-        #           first = False
-        #        else:
-        #           years_switch += " | "
- 
-        #        if y == year:
-        #            years_switch += y
-        #        else:
-        #            years_switch +=  "<a href=\"#/detail/{0}?year=2014\">2014</a>".format(entity_id)
-        #         
+        if 'visup' in request.META.get('HTTP_ORIGIN', ''):
+            years_switch =  ' | '.join(x if x == year else '<a href="#/detail/{0}?year={1}">{1}</a>'.format(entity_id, x) for x in EntePartecipatoCronologia.objects.anni_riferimento())
         else:
-            years_switch = ""
+            years_switch = ''
 
         data = {
             'item': [
@@ -385,8 +374,10 @@ def info(request):
 
     entity_id = request.GET.get('entityId')
     if entity_id:
+        year = request.GET.get('year', DEFAULT_YEAR)
+
         related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria']
-        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento='2013')
+        ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento=year)
 
         data = {
             'data': {
