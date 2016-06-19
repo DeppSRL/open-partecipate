@@ -193,7 +193,7 @@ class Command(BaseCommand):
                 indice3=row['indice3'],
                 indice4=row['indice4'],
                 indice5=row['indice5'],
-                note=row['note'],
+                note_indicatori=row['note'],
                 quota_pubblica=row['quota_pubblica'],
                 quote_stimate=row['quote_stimate'],
                 altri_soci_noti=row['altri_soci_noti'],
