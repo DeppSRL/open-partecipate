@@ -95,6 +95,11 @@ class EntePartecipato(models.Model):
         return u'{}'.format(self.ente)
 
 
+class EntePartecipatoCronologiaQuerySet(models.QuerySet):
+    def anni_riferimento(self):
+        return self.values_list('anno_riferimento', flat=True).distinct().order_by('anno_riferimento')
+
+
 class EntePartecipatoCronologia(models.Model):
     TIPOLOGIA = Choices(
         ('AL', 'amministrazionilocali', u'Amministrazioni Locali'),
@@ -132,6 +137,8 @@ class EntePartecipatoCronologia(models.Model):
 
     settori = models.ManyToManyField(EntePartecipatoSettore, through='EntePartecipatoCronologiaRegioneSettore', related_name='enti_partecipati_cronologia')
     regioni = models.ManyToManyField(Territorio, through='EntePartecipatoCronologiaRegioneSettore', related_name='enti_partecipati_cronologia')
+
+    objects = EntePartecipatoCronologiaQuerySet.as_manager()
 
     @cached_property
     def fatturato_cluster(self):
