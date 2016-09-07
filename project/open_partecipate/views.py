@@ -241,7 +241,7 @@ def overview(request):
     }
 
     # add years selector only if coming from given referers
-    if referer == 'http://openpartecipate.visup.staging.it.s3-website-eu-west-1.amazonaws.com/':
+    if referer == 'http://openpartecipate.visup.staging.it.s3-website-eu-west-1.amazonaws.com/' or 'localhost' in referer:
       for i in data['item']:
         if i['id'] == 'filter':
           i['data']['default']['year'] = '2013'
