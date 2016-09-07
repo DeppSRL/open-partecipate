@@ -3,7 +3,7 @@
 
 # Bleeding edge Django
 Django>=1.7,<1.8
-django-extensions>=1.4
+django-extensions>=1.4,<1.7
 
 # Configuration
 django-environ>=0.3
@@ -16,9 +16,9 @@ django-model-utils>=2.2
 
 psycopg2
 simplejson
-djangorestframework
+djangorestframework<3.3
 csvkit
-sqlparse
+sqlparse==0.1.19
 numpy
 
 pandas==0.14.1
