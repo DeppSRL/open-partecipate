@@ -130,12 +130,6 @@ def index(request):
 def overview(request):
     ranking_num_items = 100
 
-    if 'HTTP_REFERER' in request.META:
-      referer = request.META['HTTP_REFERER']
-    else:
-      referer = ''
-
-
     related = ['ente_partecipato__ente']
     enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related(*related)
 
@@ -241,12 +235,14 @@ def overview(request):
     }
 
     # add years selector only if coming from given referers
+    referer = request.META.get('HTTP_REFERER', '')
     if referer == 'http://openpartecipate.visup.staging.it.s3-website-eu-west-1.amazonaws.com/' or 'localhost' in referer:
-      for i in data['item']:
-        if i['id'] == 'filter':
-          i['data']['default']['year'] = '2013'
-          i['data']['year'] = [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
-          break
+        for i in data['item']:
+            if i['id'] == 'filter':
+                i['data']['default']['year'] = DEFAULT_YEAR
+                i['data']['year'] = [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
+                break
+
     return MyJsonResponse(data)
 
 

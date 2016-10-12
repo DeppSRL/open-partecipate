@@ -158,22 +158,17 @@ class Command(BaseCommand):
             ente_partecipato, created = EntePartecipato.objects.update_or_create(
                 ente=get_ente(row),
                 defaults={
-                    "anno_inizio_attivita": row['anno_inizio'],
-                    "anno_fine_attivita": row['anno_cessazione'],
-                    "comune": get_sede(row['comune'], row['provincia'],
-                                       self.logger),
-                    "cap": row['cap'],
-                    "indirizzo": row['indirizzo'],
-                    "telefono": row['tel'],
-                    "fax": row['fax'],
-                    "email": row['email'],
+                    'anno_inizio_attivita': row['anno_inizio'],
+                    'anno_fine_attivita': row['anno_cessazione'],
+                    'comune': get_sede(row['comune'], row['provincia'], self.logger),
+                    'cap': row['cap'],
+                    'indirizzo': row['indirizzo'],
+                    'telefono': row['tel'],
+                    'fax': row['fax'],
+                    'email': row['email'],
                 }
             )
-            if created:
-                self._log(u'{}/{} - Creato ente partecipato: {}'.format(n, df_count, ente_partecipato))
-            else:
-                self._log(u'{}/{} - Aggiornato ente partecipato: {}'.format(n, df_count, ente_partecipato))
-
+            self._log(u'{}/{} - Creato ente partecipato: {}'.format(n, df_count, ente_partecipato), created)
 
     @transaction.atomic
     def import_enti_partecipati_cronologia(self, df):
@@ -293,7 +288,6 @@ class Command(BaseCommand):
                 codice, descrizione = [x.strip() for x in row[0].split(' - ', 1)]
             except ValueError:
                 self.logger.warning(u'{}/{} - Errore'.format(n, df_count))
-                pass
             else:
                 object, created = model.objects.update_or_create(
                     codice=codice,
