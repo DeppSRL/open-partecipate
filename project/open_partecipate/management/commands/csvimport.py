@@ -155,18 +155,25 @@ class Command(BaseCommand):
         df_count = len(df)
 
         for n, (index, row) in enumerate(df.iterrows(), 1):
-            ente_partecipato = EntePartecipato.objects.create(
+            ente_partecipato, created = EntePartecipato.objects.update_or_create(
                 ente=get_ente(row),
-                anno_inizio_attivita=row['anno_inizio'],
-                anno_fine_attivita=row['anno_cessazione'],
-                comune=get_sede(row['comune'], row['provincia'], self.logger),
-                cap=row['cap'],
-                indirizzo=row['indirizzo'],
-                telefono=row['tel'],
-                fax=row['fax'],
-                email=row['email'],
+                defaults={
+                    "anno_inizio_attivita": row['anno_inizio'],
+                    "anno_fine_attivita": row['anno_cessazione'],
+                    "comune": get_sede(row['comune'], row['provincia'],
+                                       self.logger),
+                    "cap": row['cap'],
+                    "indirizzo": row['indirizzo'],
+                    "telefono": row['tel'],
+                    "fax": row['fax'],
+                    "email": row['email'],
+                }
             )
-            self._log(u'{}/{} - Creato ente partecipato: {}'.format(n, df_count, ente_partecipato))
+            if created:
+                self._log(u'{}/{} - Creato ente partecipato: {}'.format(n, df_count, ente_partecipato))
+            else:
+                self._log(u'{}/{} - Aggiornato ente partecipato: {}'.format(n, df_count, ente_partecipato))
+
 
     @transaction.atomic
     def import_enti_partecipati_cronologia(self, df):
@@ -193,7 +200,7 @@ class Command(BaseCommand):
                 indice3=row['indice3'],
                 indice4=row['indice4'],
                 indice5=row['indice5'],
-                note=row['note'],
+                note_indicatori=row['note'],
                 quota_pubblica=row['quota_pubblica'],
                 quote_stimate=row['quote_stimate'],
                 altri_soci_noti=row['altri_soci_noti'],
@@ -282,18 +289,20 @@ class Command(BaseCommand):
         cod2obj = {}
 
         for n, (index, row) in enumerate(df.iterrows(), 1):
-            codice, descrizione = [x.strip() for x in row[0].split(' - ', 1)]
-
-            object, created = model.objects.update_or_create(
-                codice=codice,
-                defaults={
-                    'descrizione': descrizione,
-                }
-            )
-
-            cod2obj[object.codice] = object
-
-            self._log(u'{}/{} - Creato {}: {}'.format(n, df_count, model._meta.verbose_name_raw, object), created)
+            try:
+                codice, descrizione = [x.strip() for x in row[0].split(' - ', 1)]
+            except ValueError:
+                self.logger.warning(u'{}/{} - Errore'.format(n, df_count))
+                pass
+            else:
+                object, created = model.objects.update_or_create(
+                    codice=codice,
+                    defaults={
+                        'descrizione': descrizione,
+                    }
+                )
+                cod2obj[object.codice] = object
+                self._log(u'{}/{} - Creato {}: {}'.format(n, df_count, model._meta.verbose_name_raw, object), created)
 
         return cod2obj
 
@@ -301,14 +310,14 @@ class Command(BaseCommand):
         if created:
             self.logger.info(msg)
         else:
-            self.logger.debug(msg.replace('Creat', 'Trovat'))
+            self.logger.debug(msg.replace('Creat', 'Aggiornat'))
 
 
 def get_ente(row):
     if not hasattr(get_ente, 'regione_den2obj'):
         get_ente.regione_den2obj = {x.denominazione.upper().replace('-', ' ').split('/')[0]: x for x in Territorio.objects.regioni()}
 
-    ente, _ = Ente.objects.get_or_create(
+    ente, _ = Ente.objects.update_or_create(
         id=row['codice'],
         defaults={
             'codice_fiscale': row['codfisc_partiva'],

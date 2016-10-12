@@ -130,6 +130,12 @@ def index(request):
 def overview(request):
     ranking_num_items = 100
 
+    if 'HTTP_REFERER' in request.META:
+      referer = request.META['HTTP_REFERER']
+    else:
+      referer = ''
+
+
     related = ['ente_partecipato__ente']
     enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request).distinct().select_related(*related)
 
@@ -223,17 +229,24 @@ def overview(request):
                         'region': 'Italia',
                         'sector': 'tutti i settori',
                         'type':   'partecipate',
-                        'year':   DEFAULT_YEAR,
+#                        'year':   DEFAULT_YEAR,
                     },
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
                     'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie] if not request.GET.get('type', '').count(',') else [{'id': request.GET.get('type'), 'label': u'più tipologie'}],
-                    'year':   [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
+#                    'year':   [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
                 },
             },
         ],
     }
 
+    # add years selector only if coming from given referers
+    if referer == 'http://openpartecipate.visup.staging.it.s3-website-eu-west-1.amazonaws.com/' or 'localhost' in referer:
+      for i in data['item']:
+        if i['id'] == 'filter':
+          i['data']['default']['year'] = '2013'
+          i['data']['year'] = [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
+          break
     return MyJsonResponse(data)
 
 
