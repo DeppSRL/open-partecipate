@@ -283,6 +283,8 @@ def detail(request):
         else:
             years_switch = ''
 
+        get_id = lambda x: '{}{}'.format(x.ente_azionista.ente.id, '_copy' if x.ente_azionista.ente.id == ente_partecipato_cronologia.ente_partecipato.ente.id else '')
+
         data = {
             'item': [
                 {
@@ -331,21 +333,37 @@ def detail(request):
                             }
                         ] + [
                             {
-                                'id': str(x.ente_azionista.ente.id),
+                                'id': get_id(x),
                                 'label': x.ente_azionista.ente.denominazione,
                                 'part_perc': div100(x.quota),
                                 'ipa_url': x.ente_azionista.ente.ipa_url,
                                 'radius': 0.5,
                                 'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person', 'PART': 'shareholder'}[x.ente_azionista.tipo_controllo if not x.ente_azionista.ente.is_partecipato() else 'PART'],
                             } for x in ente_partecipato_cronologia.quote.all()
+                        ] + [
+                            {
+                                'id': x['id'],
+                                'label': x['denominazione'],
+                                'part_perc': div100(x['quota']),
+                                'ipa_url': '',
+                                'radius': 0.5,
+                                'type': {'altri_soci_noti_pubblici': 'public', 'altri_soci_noti_privati': 'private', 'altri_soci_non_noti': 'unknown'}[x['id']],
+                            } for x in ente_partecipato_cronologia.altri_soci
                         ],
                         'edges': [
                             {
                                 'id': str(x.id),
                                 'source': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
-                                'target': str(x.ente_azionista.ente.id),
+                                'target': get_id(x),
                                 'width': div100(x.quota),
                             } for x in ente_partecipato_cronologia.quote.all()
+                        ] + [
+                            {
+                                'id': '{}_{}'.format(ente_partecipato_cronologia.ente_partecipato.ente.id, x['id']),
+                                'source': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
+                                'target': x['id'],
+                                'width': div100(x['quota']),
+                            } for x in ente_partecipato_cronologia.altri_soci
                         ],
                     },
                 },

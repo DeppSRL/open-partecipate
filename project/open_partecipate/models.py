@@ -148,6 +148,14 @@ class EntePartecipatoCronologia(models.Model):
 
         return self.FATTURATO_CLUSTERS[-1]
 
+    @property
+    def altri_soci(self):
+        return [{
+                    'id': attrname,
+                    'denominazione': self._meta.get_field(attrname).verbose_name.upper(),
+                    'quota': getattr(self, attrname),
+                } for attrname in ('altri_soci_noti_pubblici', 'altri_soci_noti_privati', 'altri_soci_non_noti') if getattr(self, attrname)]
+
     def __unicode__(self):
         return u'{}'.format(self.ente_partecipato_id)
 
