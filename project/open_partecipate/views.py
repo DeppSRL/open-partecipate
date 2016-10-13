@@ -336,7 +336,7 @@ def detail(request):
                                 'id': str(ente_partecipato_cronologia.ente_partecipato.ente.id),
                                 'label': ente_partecipato_cronologia.ente_partecipato.ente.denominazione,
                                 'part_perc': 0,
-                                'ipa_url': '',
+                                'ipa_url': None,
                                 'radius': 1.0,
                                 'type': 'entity',
                             }
@@ -347,14 +347,14 @@ def detail(request):
                                 'part_perc': div100(x.quota),
                                 'ipa_url': x.ente_azionista.ente.ipa_url,
                                 'radius': 0.5,
-                                'type': {'PA': 'public', 'NPA': 'private', 'PF': 'person', 'PART': 'shareholder'}[x.ente_azionista.tipo_controllo if not x.ente_azionista.ente.is_partecipato() else 'PART'],
+                                'type': 'entity' if x.ente_azionista.ente.id == ente_partecipato_cronologia.ente_partecipato.ente.id else {'PA': 'public', 'NPA': 'private', 'PF': 'person', 'PART': 'shareholder'}[x.ente_azionista.tipo_controllo if not x.ente_azionista.ente.is_partecipato() else 'PART'],
                             } for x in ente_partecipato_cronologia.quote.all()
                         ] + [
                             {
                                 'id': x['id'],
                                 'label': x['denominazione'],
                                 'part_perc': div100(x['quota']),
-                                'ipa_url': '',
+                                'ipa_url': None,
                                 'radius': 0.5,
                                 'type': {'altri_soci_noti_pubblici': 'public', 'altri_soci_noti_privati': 'private', 'altri_soci_non_noti': 'unknown'}[x['id']],
                             } for x in ente_partecipato_cronologia.altri_soci
