@@ -236,7 +236,7 @@ def overview(request):
 
     # add years selector only if coming from given referers
     referer = request.META.get('HTTP_REFERER', '')
-    if referer == 'http://openpartecipate.visup.staging.it.s3-website-eu-west-1.amazonaws.com/' or 'localhost' in referer:
+    if 'amazonaws.com' in referer or 'localhost' in referer:
         for i in data['item']:
             if i['id'] == 'filter':
                 i['data']['default']['year'] = DEFAULT_YEAR
