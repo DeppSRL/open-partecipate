@@ -385,7 +385,7 @@ def detail(request):
                                     'id': str(x.ente_partecipato.ente.id),
                                     'label': x.ente_partecipato.ente.denominazione,
                                     'value': div100(getattr(x, 'indice{}'.format(i + 1))),
-                                } for x in EntePartecipatoCronologia.objects.exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).distinct().order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
+                                } for x in EntePartecipatoCronologia.objects.filter(anno_riferimento=year).exclude(pk=ente_partecipato_cronologia.pk).exclude(**{'indice{}__isnull'.format(i + 1): True}).filter(settori__in=[s.settore for s in settori], **fatturato_cluster_conditions).distinct().order_by('-indice{}'.format(i + 1)).select_related('ente_partecipato__ente')[:5]
                             ]
                         } for i in range(1, 5)
                     ],
