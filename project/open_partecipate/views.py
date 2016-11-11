@@ -307,7 +307,7 @@ def detail(request):
                         'cap': ente_partecipato_cronologia.ente_partecipato.cap,
                         'comune': ente_partecipato_cronologia.ente_partecipato.comune.nome if ente_partecipato_cronologia.ente_partecipato.comune else '',
                         'provincia': ente_partecipato_cronologia.ente_partecipato.comune.provincia.nome if ente_partecipato_cronologia.ente_partecipato.comune and ente_partecipato_cronologia.ente_partecipato.comune.provincia else '',
-                        'regione': ente_partecipato_cronologia.ente_partecipato.ente.regione.nome,
+                        'regione': ente_partecipato_cronologia.ente_partecipato.ente.regione.nome if ente_partecipato_cronologia.ente_partecipato.ente.regione else '',
                         'telefono': ente_partecipato_cronologia.ente_partecipato.telefono,
                         'fax': ente_partecipato_cronologia.ente_partecipato.fax,
                         'mail': ente_partecipato_cronologia.ente_partecipato.email,
