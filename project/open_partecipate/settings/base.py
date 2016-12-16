@@ -331,3 +331,5 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 }
+
+DEFAULT_YEAR = env('DEFAULT_YEAR', default=None)
