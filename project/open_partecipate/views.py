@@ -9,7 +9,9 @@ from django.shortcuts import get_object_or_404
 from models import *
 
 
-DEFAULT_YEAR = getattr(settings, 'DEFAULT_YEAR', EntePartecipatoCronologia.objects.anni_riferimento().last())
+DEFAULT_YEAR = settings.DEFAULT_YEAR
+if DEFAULT_YEAR is None:
+    DEFAULT_YEAR = EntePartecipatoCronologia.objects.anni_riferimento().last()
 
 
 def div100(value):
