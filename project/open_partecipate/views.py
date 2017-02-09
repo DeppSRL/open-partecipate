@@ -429,10 +429,10 @@ def info(request):
 
 def entity_search(request):
     data = {}
-
     input = request.GET.get('input')
+    year = request.GET.get('year', DEFAULT_YEAR)
     if input:
-        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, entepartecipato__isnull=False)]
+        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(anno_rilevazione=year, denominazione__icontains=input, entepartecipato__isnull=False)]
     else:
         data['data'] = []
 
@@ -443,11 +443,11 @@ def entity_search(request):
 
 def shareholder_search(request):
     data = {}
-
     input = request.GET.get('input')
+    year = request.GET.get('year', DEFAULT_YEAR)
     if input:
         enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request)
-        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(denominazione__icontains=input, enteazionista__tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
+        data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(anno_rilevazione=year, denominazione__icontains=input, enteazionista__tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
     else:
         data['data'] = []
 
