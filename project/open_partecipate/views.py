@@ -9,11 +9,6 @@ from django.shortcuts import get_object_or_404
 from models import *
 
 
-DEFAULT_YEAR = settings.DEFAULT_YEAR
-if DEFAULT_YEAR is None:
-    DEFAULT_YEAR = EntePartecipatoCronologia.objects.anni_riferimento().last()
-
-
 def div100(value):
     try:
         return value / 100
@@ -61,7 +56,7 @@ def get_filtered_enti_partecipati_cronologia(request):
 
     conditions = {}
 
-    conditions['anno_riferimento'] = params.get('year', DEFAULT_YEAR)
+    conditions['anno_riferimento'] = params.get('year', request.default_year)
 
     entity_id = params.get('entityId')
     if entity_id:
@@ -225,31 +220,31 @@ def overview(request):
                         'region': 'Italia',
                         'sector': 'tutti i settori',
                         'type':   'partecipate',
-#                        'year':   DEFAULT_YEAR,
+                        'year':   request.default_year,
                     },
                     'region': [{'id': str(x.cod_reg), 'label': x.nome} for x in regioni],
                     'sector': [{'id': str(x.pk), 'label': x.descrizione} for x in settori] if not request.GET.get('sector', '').count(',') else [{'id': request.GET.get('sector'), 'label': u'più settori'}],
                     'type':   [{'id': str(x.pk), 'label': x.descrizione} for x in tipologie] if not request.GET.get('type', '').count(',') else [{'id': request.GET.get('type'), 'label': u'più tipologie'}],
-#                    'year':   [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
+                    'year':   [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != request.default_year]
                 },
             },
         ],
     }
 
     # add years selector only if coming from given referers
-    referer = request.META.get('HTTP_REFERER', '')
-    if 'amazonaws.com' in referer or 'localhost' in referer:
-        for i in data['item']:
-            if i['id'] == 'filter':
-                i['data']['default']['year'] = DEFAULT_YEAR
-                i['data']['year'] = [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
-                break
+    # referer = request.META.get('HTTP_REFERER', '')
+    # if 'amazonaws.com' in referer or 'localhost' in referer:
+    #     for i in data['item']:
+    #         if i['id'] == 'filter':
+    #             i['data']['default']['year'] = DEFAULT_YEAR
+    #             i['data']['year'] = [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
+    #             break
 
     return MyJsonResponse(data)
 
 
 def entities(request):
-    year = request.GET.get('year', DEFAULT_YEAR)
+    year = request.GET.get('year', request.default_year)
 
     related = ['ente_partecipato__ente']
     enti_partecipati_cronologia = EntePartecipatoCronologia.objects.filter(anno_riferimento=year).select_related(*related)
@@ -274,7 +269,7 @@ def detail(request):
 
     entity_id = request.GET.get('entityId')
     if entity_id:
-        year = request.GET.get('year', DEFAULT_YEAR)
+        year = request.GET.get('year', request.default_year)
 
         related = ['ente_partecipato__ente__regione', 'ente_partecipato__comune', 'categoria', 'sottotipo', 'quote__ente_azionista__ente__regione']
         ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento=year)
@@ -406,7 +401,7 @@ def info(request):
 
     entity_id = request.GET.get('entityId')
     if entity_id:
-        year = request.GET.get('year', DEFAULT_YEAR)
+        year = request.GET.get('year', request.default_year)
 
         related = ['ente_partecipato__ente', 'ente_partecipato__comune', 'categoria']
         ente_partecipato_cronologia = get_object_or_404(EntePartecipatoCronologia.objects.select_related(*related).prefetch_related(*related), ente_partecipato_id=entity_id, anno_riferimento=year)
@@ -430,7 +425,7 @@ def info(request):
 def entity_search(request):
     data = {}
     input = request.GET.get('input')
-    year = request.GET.get('year', DEFAULT_YEAR)
+    year = request.GET.get('year', request.default_year)
     if input:
         data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(anno_rilevazione=year, denominazione__icontains=input, entepartecipato__isnull=False)]
     else:
@@ -444,7 +439,7 @@ def entity_search(request):
 def shareholder_search(request):
     data = {}
     input = request.GET.get('input')
-    year = request.GET.get('year', DEFAULT_YEAR)
+    year = request.GET.get('year', request.default_year)
     if input:
         enti_partecipati_cronologia = get_filtered_enti_partecipati_cronologia(request)
         data['data'] = [{'id': str(x.id), 'label': x.denominazione} for x in Ente.objects.filter(anno_rilevazione=year, denominazione__icontains=input, enteazionista__tipo_controllo=EnteAzionista.TIPO_CONTROLLO.PA, enteazionista__quote__ente_partecipato_cronologia__in=enti_partecipati_cronologia).distinct()]
