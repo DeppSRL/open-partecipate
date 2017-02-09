@@ -289,8 +289,11 @@ def detail(request):
             fatturato_cluster_conditions['fatturato__lte'] = ente_partecipato_cronologia.fatturato_cluster['to']
 
         # selettore anni
-        if 'visup' in request.META.get('HTTP_ORIGIN', ''):
-            years_switch =  ' | '.join(x if x == year else '<a href="#/detail/{0}?year={1}">{1}</a>'.format(entity_id, x) for x in EntePartecipatoCronologia.objects.anni_riferimento())
+        if any(key in request.META.get('HTTP_ORIGIN', '') for key in ('visup','localhost','staging')):
+            years_switch =  "&nbsp;&nbsp;&nbsp;(seleziona l'anno: " + \
+               ' | '.join( ('<b>'+x+'</b>') if x == year else '<a href="#/detail/{0}?year={1}">{1}</a>'.format(entity_id, x) for x in EntePartecipatoCronologia.objects.anni_riferimento()) + \
+            ')'
+
         else:
             years_switch = ''
 
@@ -314,7 +317,7 @@ def detail(request):
                         'fax': ente_partecipato_cronologia.ente_partecipato.fax,
                         'mail': ente_partecipato_cronologia.ente_partecipato.email,
                         'anno_cessazione': ente_partecipato_cronologia.ente_partecipato.anno_fine_attivita,
-                        'anno_rilevazione': ente_partecipato_cronologia.ente_partecipato.ente.anno_rilevazione,
+                        'anno_rilevazione': ente_partecipato_cronologia.anno_riferimento,
                         'tipologia': {'id': str(ente_partecipato_cronologia.categoria.pk), 'name': ente_partecipato_cronologia.categoria.descrizione},
                         'sottotipo': ente_partecipato_cronologia.sottotipo.descrizione,
                         'regioni_attivita': [{'id': x.regione.cod_reg, 'name': x.regione.nome, 'quota': div100(x.regione_quota)} for x in regioni],
