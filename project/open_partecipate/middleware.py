@@ -9,7 +9,7 @@ class DefaultYearMiddleware(object):
     def process_request(self, request):
 
         referer = request.META.get('HTTP_REFERER', '')
-        is_dev_env = False and any(key in referer for key in ['amazonaws.com', 'localhost'])
+        is_dev_env = any(key in referer for key in ['amazonaws.com', 'localhost'])
         if is_dev_env:
             default_year = EntePartecipatoCronologia.objects.anni_riferimento().last()
         else:
