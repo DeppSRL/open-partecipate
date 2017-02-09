@@ -231,14 +231,12 @@ def overview(request):
         ],
     }
 
-    # add years selector only if coming from given referers
-    # referer = request.META.get('HTTP_REFERER', '')
-    # if 'amazonaws.com' in referer or 'localhost' in referer:
-    #     for i in data['item']:
-    #         if i['id'] == 'filter':
-    #             i['data']['default']['year'] = DEFAULT_YEAR
-    #             i['data']['year'] = [{'id': x, 'label': x} for x in EntePartecipatoCronologia.objects.anni_riferimento() if x != DEFAULT_YEAR]
-    #             break
+    # remove years selector if not in dev_env (see middleware)
+    if not request.is_dev_env:
+        for i in data['item']:
+            if i['id'] == 'filter':
+                del i['data']['year']
+                break
 
     return MyJsonResponse(data)
 
