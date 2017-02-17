@@ -231,12 +231,13 @@ def overview(request):
         ],
     }
 
+    # DEPRECATED
     # remove years selector if not in dev_env (see middleware)
-    if not request.is_dev_env:
-        for i in data['item']:
-            if i['id'] == 'filter':
-                del i['data']['year']
-                break
+    # if not request.is_dev_env:
+    #     for i in data['item']:
+    #         if i['id'] == 'filter':
+    #             del i['data']['year']
+    #             break
 
     return MyJsonResponse(data)
 
